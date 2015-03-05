@@ -38,3 +38,9 @@ git = "https://github.com/AngryLawyer/rust-sdl2"
 
 [dependencies.pistoncore-sdl2_window]
 git = "https://github.com/PistonDevelopers/sdl2_window"
+
+[dependencies.skeletal_animation]
+git = "https://github.com/PistonDevelopers/skeletal_animation"
+
+[dependencies.collada]
+git = "https://github.com/PistonDevelopers/piston_collada"

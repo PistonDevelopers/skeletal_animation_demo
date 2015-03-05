@@ -1,14 +1,18 @@
-extern crate piston;
-extern crate shader_version;
-extern crate sdl2;
-extern crate sdl2_window;
-extern crate gfx;
-extern crate camera_controllers;
-extern crate vecmath;
-extern crate env_logger;
+#![feature(old_path)]
+
 extern crate "gfx_gl" as gl;
+extern crate camera_controllers;
+extern crate collada;
+extern crate env_logger;
+extern crate gfx;
 extern crate gfx_debug_draw;
 extern crate gfx_device_gl;
+extern crate piston;
+extern crate sdl2;
+extern crate sdl2_window;
+extern crate shader_version;
+extern crate skeletal_animation;
+extern crate vecmath;
 
 use gfx_debug_draw::{DebugRendererBuilder};
 
@@ -32,6 +36,9 @@ use camera_controllers::{
     CameraPerspective,
     model_view_projection
 };
+
+use skeletal_animation::SkinnedRenderer;
+use collada::document::ColladaDocument;
 
 fn main() {
 
@@ -67,6 +74,9 @@ fn main() {
     let mut graphics = gfx::Graphics::new(device);
 
     let mut debug_renderer = DebugRendererBuilder::new(&mut graphics, [frame.width as u32, frame.height as u32]).build().ok().unwrap();
+
+    let collada_document = ColladaDocument::from_path(&Path::new("assets/suit_guy.dae")).unwrap();
+    let mut skinned_renderer = SkinnedRenderer::from_collada(&mut graphics, collada_document).unwrap();
 
     let model = mat4_id();
     let mut projection = CameraPerspective {
@@ -110,9 +120,11 @@ fn main() {
         if let Some(args) = e.render_args() {
             graphics.clear(clear, gfx::COLOR | gfx::DEPTH, &frame);
 
+            let camera_view = orbit_zoom_camera.camera(args.ext_dt).orthogonal();
+
             let camera_projection = model_view_projection(
                 model,
-                orbit_zoom_camera.camera(args.ext_dt).orthogonal(),
+                camera_view,
                 projection
             );
 
@@ -143,6 +155,8 @@ fn main() {
             );
 
             debug_renderer.render(&mut graphics, &frame, camera_projection);
+
+            skinned_renderer.render(&mut graphics, &frame, camera_view, camera_projection, 0.0f32);
 
             graphics.end_frame();
         }
