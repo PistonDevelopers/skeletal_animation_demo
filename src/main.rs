@@ -75,8 +75,18 @@ fn main() {
 
     let mut debug_renderer = DebugRendererBuilder::new(&mut graphics, [frame.width as u32, frame.height as u32]).build().ok().unwrap();
 
+    // TODO - these are (usually) available in the COLLADA file, associated with a <mesh> element in a somewhat convoluted way
+    let texture_paths = vec![
+        "assets/young_lightskinned_male_diffuse.png",
+        "assets/suit01lres_diffuse.png",
+        "assets/male02_diffuse_black.png",
+        "assets/brown_eye.png",
+        "assets/eyebrow009.png",
+        "assets/eyelashes01.png",
+    ];
+
     let collada_document = ColladaDocument::from_path(&Path::new("assets/suit_guy.dae")).unwrap();
-    let mut skinned_renderer = SkinnedRenderer::from_collada(&mut graphics, collada_document).unwrap();
+    let mut skinned_renderer = SkinnedRenderer::from_collada(&mut graphics, collada_document, texture_paths).unwrap();
 
     let model = mat4_id();
     let mut projection = CameraPerspective {
@@ -96,6 +106,8 @@ fn main() {
     Gl::load_with(|s| unsafe {
         std::mem::transmute(sdl2::video::gl_get_proc_address(s))
     });
+
+    let mut elapsed_time = 0f64;
 
     for e in events(&window) {
 
@@ -133,9 +145,6 @@ fn main() {
             debug_renderer.draw_line([0.0, 0.0, 0.0], [0.0, 5.0, 0.0], [0.0, 1.0, 0.0, 1.0]);
             debug_renderer.draw_line([0.0, 0.0, 0.0], [0.0, 0.0, 5.0], [0.0, 0.0, 1.0, 1.0]);
 
-            // FIXME - this doesn't actually calculate FPS at all
-            debug_renderer.draw_text_on_screen(&format!("FPS: {}", 1.0 / args.ext_dt)[..], [10, 10], [1.0, 0.4, 0.4, 0.7]);
-
             debug_renderer.draw_text_at_position(
                 "X",
                 [6.0, 0.0, 0.0],
@@ -156,7 +165,8 @@ fn main() {
 
             debug_renderer.render(&mut graphics, &frame, camera_projection);
 
-            skinned_renderer.render(&mut graphics, &frame, camera_view, camera_projection, 0.0f32);
+            elapsed_time = elapsed_time + 0.02f64; // TODO use actual time
+            skinned_renderer.render(&mut graphics, &frame, camera_view, camera_projection, elapsed_time as f32);
 
             graphics.end_frame();
         }
