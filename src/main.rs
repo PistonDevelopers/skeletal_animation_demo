@@ -1,6 +1,4 @@
-#![feature(old_path)]
-
-extern crate "gfx_gl" as gl;
+extern crate gfx_gl as gl;
 extern crate camera_controllers;
 extern crate collada;
 extern crate env_logger;
@@ -14,10 +12,13 @@ extern crate shader_version;
 extern crate skeletal_animation;
 extern crate vecmath;
 
-use gfx_debug_draw::{DebugRendererBuilder};
+use gfx::traits::*;
+use gfx_debug_draw::DebugRenderer;
 
 use gl::Gl;
 
+use std::path::Path;
+use std::rc::Rc;
 use std::cell::RefCell;
 use piston::window::WindowSettings;
 use piston::event::{
@@ -63,7 +64,7 @@ fn main() {
 
     let mut frame = gfx::Frame::new(win_width as u16, win_height as u16);
 
-    let window = RefCell::new(window);
+    let window = Rc::new(RefCell::new(window));
 
     let clear = gfx::ClearData {
         color: [0.3, 0.3, 0.3, 1.0],
@@ -71,9 +72,9 @@ fn main() {
         stencil: 0
     };
 
-    let mut graphics = gfx::Graphics::new(device);
+    let mut graphics = device.into_graphics();
 
-    let mut debug_renderer = DebugRendererBuilder::new(&mut graphics, [frame.width as u32, frame.height as u32]).build().ok().unwrap();
+    let mut debug_renderer = DebugRenderer::new(*graphics.device.get_capabilities(), &mut graphics.device, [frame.width as u32, frame.height as u32], 64, None, None).ok().unwrap();
 
     // TODO - these are (usually) available in the COLLADA file, associated with a <mesh> element in a somewhat convoluted way
     let texture_paths = vec![
@@ -109,7 +110,7 @@ fn main() {
 
     let mut elapsed_time = 0f64;
 
-    for e in events(&window) {
+    for e in events(window) {
 
         e.resize(|width, height| {
             debug_renderer.resize(width, height);
@@ -163,6 +164,7 @@ fn main() {
                 [0.0, 0.0, 1.0, 1.0],
             );
 
+            debug_renderer.update(&mut graphics.device);
             debug_renderer.render(&mut graphics, &frame, camera_projection);
 
             elapsed_time = elapsed_time + 0.02f64; // TODO use actual time
