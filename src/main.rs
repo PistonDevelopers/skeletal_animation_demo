@@ -49,13 +49,10 @@ fn main() {
 
     let window = Sdl2Window::new(
         shader_version::OpenGL::_3_2,
-        WindowSettings {
-            title: "Animation Viewer".to_string(),
-            size: [640, 480],
-            fullscreen: false,
-            exit_on_esc: true,
-            samples: 4
-        }
+        WindowSettings::new(
+            "Animation Viewer".to_string(),
+            piston::window::Size { width: 640, height: 480 }
+        ).exit_on_esc(true)
     );
 
     let device = gfx_device_gl::GlDevice::new(|s| unsafe {
