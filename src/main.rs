@@ -166,6 +166,7 @@ fn main() {
 
             elapsed_time = elapsed_time + 0.02f64; // TODO use actual time
             skinned_renderer.render(&mut graphics, &frame, camera_view, camera_projection, elapsed_time as f32);
+            skinned_renderer.render_skeleton(&mut debug_renderer, elapsed_time as f32, true);
 
             graphics.end_frame();
         }
