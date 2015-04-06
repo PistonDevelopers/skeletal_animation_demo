@@ -20,7 +20,12 @@ use gl::Gl;
 use std::path::Path;
 use std::rc::Rc;
 use std::cell::RefCell;
-use piston::window::WindowSettings;
+
+use piston::window::{
+    WindowSettings,
+    OpenGLWindow,
+};
+
 use piston::event::{
     events,
     RenderEvent,
@@ -47,7 +52,7 @@ fn main() {
 
     let (win_width, win_height) = (640, 480);
 
-    let window = Sdl2Window::new(
+    let mut window = Sdl2Window::new(
         shader_version::OpenGL::_3_2,
         WindowSettings::new(
             "Animation Viewer".to_string(),
@@ -55,9 +60,7 @@ fn main() {
         ).exit_on_esc(true)
     );
 
-    let device = gfx_device_gl::GlDevice::new(|s| unsafe {
-        std::mem::transmute(sdl2::video::gl_get_proc_address(s))
-    });
+    let mut graphics = gfx_device_gl::create(|s| window.get_proc_address(s)).into_graphics();
 
     let mut frame = gfx::Frame::new(win_width as u16, win_height as u16);
 
@@ -69,9 +72,7 @@ fn main() {
         stencil: 0
     };
 
-    let mut graphics = device.into_graphics();
-
-    let mut debug_renderer = DebugRenderer::new(*graphics.device.get_capabilities(), &mut graphics.device, [frame.width as u32, frame.height as u32], 64, None, None).ok().unwrap();
+    let mut debug_renderer = DebugRenderer::new(&mut graphics, [frame.width as u32, frame.height as u32], 64, None, None).ok().unwrap();
 
     // TODO - these are (usually) available in the COLLADA file, associated with a <mesh> element in a somewhat convoluted way
     let texture_paths = vec![
@@ -161,7 +162,6 @@ fn main() {
                 [0.0, 0.0, 1.0, 1.0],
             );
 
-            debug_renderer.update(&mut graphics.device);
             debug_renderer.render(&mut graphics, &frame, camera_projection);
 
             elapsed_time = elapsed_time + 0.02f64; // TODO use actual time
