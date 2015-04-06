@@ -43,8 +43,11 @@ use camera_controllers::{
     model_view_projection
 };
 
-use skeletal_animation::SkinnedRenderer;
+use skeletal_animation::*;
 use collada::document::ColladaDocument;
+
+use piston::input::keyboard::Key;
+use piston::input::Button::Keyboard;
 
 fn main() {
 
@@ -85,7 +88,26 @@ fn main() {
     ];
 
     let collada_document = ColladaDocument::from_path(&Path::new("assets/suit_guy.dae")).unwrap();
+
     let mut skinned_renderer = SkinnedRenderer::from_collada(&mut graphics, collada_document, texture_paths).unwrap();
+
+    let collada_document = ColladaDocument::from_path(&Path::new("assets/walk.dae")).unwrap();
+    let animations = collada_document.get_animations();
+    let mut skeleton_set = collada_document.get_skeletons().unwrap();
+    let skeleton = &skeleton_set[0];
+    let mut walk_clip = AnimationClip::from_collada(skeleton, &animations);
+    walk_clip.set_duration(1.0);
+
+    let collada_document = ColladaDocument::from_path(&Path::new("assets/run.dae")).unwrap();
+    let animations = collada_document.get_animations();
+    let mut skeleton_set = collada_document.get_skeletons().unwrap();
+    let skeleton = &skeleton_set[0];
+    let mut run_clip = AnimationClip::from_collada(skeleton, &animations);
+    run_clip.set_duration(1.0);
+
+    let walk_node = ClipNode { start_time: 0.0, clip: &walk_clip };
+    let run_node = ClipNode { start_time: 0.0, clip: &run_clip };
+    let mut lerp_node = LerpNode { blend_parameter: 0.0, inputs: [&walk_node, &run_node] };
 
     let model = mat4_id();
     let mut projection = CameraPerspective {
@@ -108,7 +130,12 @@ fn main() {
 
     let mut elapsed_time = 0f64;
 
+    let mut skeleton_toggle = false;
+    let mut mesh_toggle = true;
+
     for e in events(window) {
+
+        use piston::event::PressEvent;
 
         e.resize(|width, height| {
             debug_renderer.resize(width, height);
@@ -127,6 +154,16 @@ fn main() {
         });
 
         orbit_zoom_camera.event(&e);
+
+        e.press(|button| {
+            match button {
+                Keyboard(Key::W) => { lerp_node.blend_parameter -= 0.1; },
+                Keyboard(Key::R) => { lerp_node.blend_parameter += 0.1; },
+                Keyboard(Key::M) => { mesh_toggle = !mesh_toggle; },
+                Keyboard(Key::S) => { skeleton_toggle = !skeleton_toggle },
+                _ => {},
+            }
+        });
 
         if let Some(args) = e.render_args() {
             graphics.clear(clear, gfx::COLOR | gfx::DEPTH, &frame);
@@ -162,11 +199,27 @@ fn main() {
                 [0.0, 0.0, 1.0, 1.0],
             );
 
-            debug_renderer.render(&mut graphics, &frame, camera_projection);
+            elapsed_time = elapsed_time + 0.01 + 0.02 * lerp_node.blend_parameter as f64;
 
-            elapsed_time = elapsed_time + 0.02f64; // TODO use actual time
-            skinned_renderer.render(&mut graphics, &frame, camera_view, camera_projection, elapsed_time as f32);
-            skinned_renderer.render_skeleton(&mut debug_renderer, elapsed_time as f32, true);
+            debug_renderer.draw_text_on_screen(
+                &format!("Blend Factor: {}", lerp_node.blend_parameter)[..],
+                [10, 10],
+                [1.0, 0.0, 0.0, 1.0],
+            );
+
+            let mut local_poses = [ SQT { translation: [0.0, 0.0, 0.0], scale: 0.0, rotation: (0.0, [0.0, 0.0, 0.0]) }; 64 ];
+            lerp_node.get_output_pose(elapsed_time as f32, &mut local_poses[0 .. skeleton.joints.len()]);
+            let global_poses = calculate_global_poses(skeleton, &local_poses);
+
+            if mesh_toggle {
+                skinned_renderer.render(&mut graphics, &frame, camera_view, camera_projection, &global_poses);
+            }
+
+            if skeleton_toggle {
+                draw_skeleton(&skeleton, &global_poses, &mut debug_renderer, false);
+            }
+
+            debug_renderer.render(&mut graphics, &frame, camera_projection);
 
             graphics.end_frame();
         }
