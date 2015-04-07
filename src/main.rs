@@ -51,6 +51,8 @@ use piston::input::Button::Keyboard;
 
 fn main() {
 
+    use std::f32::consts::PI;
+
     env_logger::init().unwrap();
 
     let (win_width, win_height) = (640, 480);
@@ -89,25 +91,54 @@ fn main() {
 
     let collada_document = ColladaDocument::from_path(&Path::new("assets/suit_guy.dae")).unwrap();
 
-    let mut skinned_renderer = SkinnedRenderer::from_collada(&mut graphics, collada_document, texture_paths).unwrap();
+    //let mut skinned_renderer = SkinnedRenderer::from_collada(&mut graphics, collada_document, texture_paths).unwrap();
+
+    let rotate_on_z = [
+        [PI.cos(), -PI.sin(), 0.0, 0.0],
+        [PI.sin(), PI.cos(), 0.0, 0.0],
+        [0.0, 0.0, 1.0, 0.0],
+        [0.0, 0.0, 0.0, 1.0],
+    ];
 
     let collada_document = ColladaDocument::from_path(&Path::new("assets/walk.dae")).unwrap();
     let animations = collada_document.get_animations();
     let mut skeleton_set = collada_document.get_skeletons().unwrap();
     let skeleton = &skeleton_set[0];
-    let mut walk_clip = AnimationClip::from_collada(skeleton, &animations);
-    walk_clip.set_duration(1.0);
+    let mut walk_clip = Rc::new(RefCell::new(AnimationClip::from_collada(skeleton, &animations, &mat4_id())));
+    walk_clip.borrow_mut().set_duration(1.0);
 
     let collada_document = ColladaDocument::from_path(&Path::new("assets/run.dae")).unwrap();
     let animations = collada_document.get_animations();
     let mut skeleton_set = collada_document.get_skeletons().unwrap();
     let skeleton = &skeleton_set[0];
-    let mut run_clip = AnimationClip::from_collada(skeleton, &animations);
-    run_clip.set_duration(1.0);
+    let mut run_clip = Rc::new(RefCell::new(AnimationClip::from_collada(skeleton, &animations, &mat4_id())));
+    run_clip.borrow_mut().set_duration(1.0);
 
-    let walk_node = ClipNode { start_time: 0.0, clip: &walk_clip };
-    let run_node = ClipNode { start_time: 0.0, clip: &run_clip };
-    let mut lerp_node = LerpNode { blend_parameter: 0.0, inputs: [&walk_node, &run_node] };
+    let collada_document = ColladaDocument::from_path(&Path::new("assets/walk_left.dae")).unwrap();
+    let animations = collada_document.get_animations();
+    let mut skeleton_set = collada_document.get_skeletons().unwrap();
+    let skeleton = &skeleton_set[0];
+    let mut walk_left_clip = Rc::new(RefCell::new(AnimationClip::from_collada(skeleton, &animations, &rotate_on_z)));
+    walk_left_clip.borrow_mut().set_duration(1.0);
+
+    let collada_document = ColladaDocument::from_path(&Path::new("assets/walk_right.dae")).unwrap();
+    let animations = collada_document.get_animations();
+    let mut skeleton_set = collada_document.get_skeletons().unwrap();
+    let skeleton = &skeleton_set[0];
+    let mut walk_right_clip = Rc::new(RefCell::new(AnimationClip::from_collada(skeleton, &animations, &rotate_on_z)));
+    walk_right_clip.borrow_mut().set_duration(1.0);
+
+    let walk_node = Rc::new(RefCell::new(BlendTreeNode::ClipNode(walk_clip)));
+    let run_node = Rc::new(RefCell::new(BlendTreeNode::ClipNode(run_clip)));
+    let walk_left_node = Rc::new(RefCell::new(BlendTreeNode::ClipNode(walk_left_clip)));
+    let walk_right_node = Rc::new(RefCell::new(BlendTreeNode::ClipNode(walk_right_clip)));
+
+    let mut params: [f32; 3] = [0.0, 0.0, 0.0];
+
+    let speed_node = Rc::new(RefCell::new(BlendTreeNode::LerpNode(walk_node, run_node, 0)));
+    let lr_node = Rc::new(RefCell::new(BlendTreeNode::LerpNode(walk_left_node, walk_right_node, 1)));
+    let root_node = Rc::new(RefCell::new(BlendTreeNode::LerpNode(speed_node, lr_node, 2)));
+
 
     let model = mat4_id();
     let mut projection = CameraPerspective {
@@ -159,14 +190,23 @@ fn main() {
 
         e.press(|button| {
             match button {
-                Keyboard(Key::W) => { lerp_node.blend_parameter -= 0.1; },
-                Keyboard(Key::R) => { lerp_node.blend_parameter += 0.1; },
+
+                Keyboard(Key::W) => { params[0] -= 0.1; },
+                Keyboard(Key::S) => { params[0] += 0.1; },
+
+                Keyboard(Key::A) => { params[1] -= 0.1; },
+                Keyboard(Key::D) => { params[1] += 0.1; },
+
+                Keyboard(Key::Q) => { params[2] -= 0.1; },
+                Keyboard(Key::E) => { params[2] += 0.1; },
+
                 Keyboard(Key::M) => { mesh_toggle = !mesh_toggle; },
-                Keyboard(Key::S) => { skeleton_toggle = !skeleton_toggle },
+                Keyboard(Key::B) => { skeleton_toggle = !skeleton_toggle },
 
                 Keyboard(Key::P) => { speed *= 1.5; },
                 Keyboard(Key::O) => { speed *= 0.75; },
                 Keyboard(Key::L) => { label_toggle = !label_toggle; },
+
                 _ => {},
             }
         });
@@ -205,20 +245,32 @@ fn main() {
                 [0.0, 0.0, 1.0, 1.0],
             );
 
-            elapsed_time = elapsed_time + (0.01 + 0.02 * lerp_node.blend_parameter as f64) * speed;
+            elapsed_time = elapsed_time + (0.01 + 0.02 * params[0] as f64) * speed;
 
             debug_renderer.draw_text_on_screen(
-                &format!("Blend Factor: {}", lerp_node.blend_parameter)[..],
+                &format!("Blend Factor: {}", params[0]),
                 [10, 10],
                 [1.0, 0.0, 0.0, 1.0],
             );
 
+            debug_renderer.draw_text_on_screen(
+                &format!("LR: {}", params[1]),
+                [10, 40],
+                [1.0, 0.0, 0.0, 1.0],
+            );
+
+            debug_renderer.draw_text_on_screen(
+                &format!("ROOT: {}", params[2]),
+                [10, 80],
+                [1.0, 0.0, 0.0, 1.0],
+            );
+
             let mut local_poses = [ SQT { translation: [0.0, 0.0, 0.0], scale: 0.0, rotation: (0.0, [0.0, 0.0, 0.0]) }; 64 ];
-            lerp_node.get_output_pose(elapsed_time as f32, &mut local_poses[0 .. skeleton.joints.len()]);
+            root_node.borrow().get_output_pose(elapsed_time as f32, &params[..], &mut local_poses[0 .. skeleton.joints.len()]);
             let global_poses = calculate_global_poses(skeleton, &local_poses);
 
             if mesh_toggle {
-                skinned_renderer.render(&mut graphics, &frame, camera_view, camera_projection, &global_poses);
+                //skinned_renderer.render(&mut graphics, &frame, camera_view, camera_projection, &global_poses);
             }
 
             if skeleton_toggle {
