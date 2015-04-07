@@ -15,6 +15,8 @@ extern crate vecmath;
 use gfx::traits::*;
 use gfx_debug_draw::DebugRenderer;
 
+use std::collections::HashMap;
+
 use gl::Gl;
 
 use std::path::Path;
@@ -48,6 +50,7 @@ use collada::document::ColladaDocument;
 
 use piston::input::keyboard::Key;
 use piston::input::Button::Keyboard;
+
 
 fn main() {
 
@@ -90,6 +93,15 @@ fn main() {
     ];
 
     let collada_document = ColladaDocument::from_path(&Path::new("assets/suit_guy.dae")).unwrap();
+    let mut skeleton_set = collada_document.get_skeletons().unwrap();
+    let skeleton = &skeleton_set[0];
+
+    let mut anim_clips = load_animations("assets/clips.json").unwrap();
+
+    let blend_tree = BlendTreeNode::from_def(
+        BlendTreeNodeDef::from_path("assets/walking_blend_tree.json").unwrap(),
+        &anim_clips,
+    );
 
     //let mut skinned_renderer = SkinnedRenderer::from_collada(&mut graphics, collada_document, texture_paths).unwrap();
 
@@ -100,44 +112,7 @@ fn main() {
         [0.0, 0.0, 0.0, 1.0],
     ];
 
-    let collada_document = ColladaDocument::from_path(&Path::new("assets/walk.dae")).unwrap();
-    let animations = collada_document.get_animations();
-    let mut skeleton_set = collada_document.get_skeletons().unwrap();
-    let skeleton = &skeleton_set[0];
-    let mut walk_clip = Rc::new(RefCell::new(AnimationClip::from_collada(skeleton, &animations, &mat4_id())));
-    walk_clip.borrow_mut().set_duration(1.0);
-
-    let collada_document = ColladaDocument::from_path(&Path::new("assets/run.dae")).unwrap();
-    let animations = collada_document.get_animations();
-    let mut skeleton_set = collada_document.get_skeletons().unwrap();
-    let skeleton = &skeleton_set[0];
-    let mut run_clip = Rc::new(RefCell::new(AnimationClip::from_collada(skeleton, &animations, &mat4_id())));
-    run_clip.borrow_mut().set_duration(1.0);
-
-    let collada_document = ColladaDocument::from_path(&Path::new("assets/walk_left.dae")).unwrap();
-    let animations = collada_document.get_animations();
-    let mut skeleton_set = collada_document.get_skeletons().unwrap();
-    let skeleton = &skeleton_set[0];
-    let mut walk_left_clip = Rc::new(RefCell::new(AnimationClip::from_collada(skeleton, &animations, &rotate_on_z)));
-    walk_left_clip.borrow_mut().set_duration(1.0);
-
-    let collada_document = ColladaDocument::from_path(&Path::new("assets/walk_right.dae")).unwrap();
-    let animations = collada_document.get_animations();
-    let mut skeleton_set = collada_document.get_skeletons().unwrap();
-    let skeleton = &skeleton_set[0];
-    let mut walk_right_clip = Rc::new(RefCell::new(AnimationClip::from_collada(skeleton, &animations, &rotate_on_z)));
-    walk_right_clip.borrow_mut().set_duration(1.0);
-
-    let walk_node = Rc::new(RefCell::new(BlendTreeNode::ClipNode(walk_clip)));
-    let run_node = Rc::new(RefCell::new(BlendTreeNode::ClipNode(run_clip)));
-    let walk_left_node = Rc::new(RefCell::new(BlendTreeNode::ClipNode(walk_left_clip)));
-    let walk_right_node = Rc::new(RefCell::new(BlendTreeNode::ClipNode(walk_right_clip)));
-
     let mut params: [f32; 3] = [0.0, 0.0, 0.0];
-
-    let speed_node = Rc::new(RefCell::new(BlendTreeNode::LerpNode(walk_node, run_node, 0)));
-    let lr_node = Rc::new(RefCell::new(BlendTreeNode::LerpNode(walk_left_node, walk_right_node, 1)));
-    let root_node = Rc::new(RefCell::new(BlendTreeNode::LerpNode(speed_node, lr_node, 2)));
 
 
     let model = mat4_id();
@@ -266,7 +241,7 @@ fn main() {
             );
 
             let mut local_poses = [ SQT { translation: [0.0, 0.0, 0.0], scale: 0.0, rotation: (0.0, [0.0, 0.0, 0.0]) }; 64 ];
-            root_node.borrow().get_output_pose(elapsed_time as f32, &params[..], &mut local_poses[0 .. skeleton.joints.len()]);
+            blend_tree.get_output_pose(elapsed_time as f32, &params[..], &mut local_poses[0 .. skeleton.joints.len()]);
             let global_poses = calculate_global_poses(skeleton, &local_poses);
 
             if mesh_toggle {

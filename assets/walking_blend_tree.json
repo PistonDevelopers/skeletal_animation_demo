@@ -1,0 +1,27 @@
+{
+	"type": "LerpNode",
+	"param": 0,
+	"inputs": [ {
+		"type": "LerpNode",
+		"param": 1,
+		"inputs": [{
+			"type": "ClipNode",
+			"clip_source": "walk-forward"
+		}, {
+			"type": "ClipNode",
+			"clip_source": "run-forward"
+		}]
+
+	}, {
+		"type": "LerpNode",
+		"param": 2,
+		"inputs": [{
+			"type": "ClipNode",
+			"clip_source": "walk-left",
+			"frame_offset": 14
+		}, {
+			"type": "ClipNode",
+			"clip_source": "walk-right"
+		}]
+	}]
+}
