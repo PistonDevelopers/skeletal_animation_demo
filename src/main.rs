@@ -132,6 +132,8 @@ fn main() {
 
     let mut skeleton_toggle = false;
     let mut mesh_toggle = true;
+    let mut speed = 1.0;
+    let mut label_toggle = false;
 
     for e in events(window) {
 
@@ -161,6 +163,10 @@ fn main() {
                 Keyboard(Key::R) => { lerp_node.blend_parameter += 0.1; },
                 Keyboard(Key::M) => { mesh_toggle = !mesh_toggle; },
                 Keyboard(Key::S) => { skeleton_toggle = !skeleton_toggle },
+
+                Keyboard(Key::P) => { speed *= 1.5; },
+                Keyboard(Key::O) => { speed *= 0.75; },
+                Keyboard(Key::L) => { label_toggle = !label_toggle; },
                 _ => {},
             }
         });
@@ -199,7 +205,7 @@ fn main() {
                 [0.0, 0.0, 1.0, 1.0],
             );
 
-            elapsed_time = elapsed_time + 0.01 + 0.02 * lerp_node.blend_parameter as f64;
+            elapsed_time = elapsed_time + (0.01 + 0.02 * lerp_node.blend_parameter as f64) * speed;
 
             debug_renderer.draw_text_on_screen(
                 &format!("Blend Factor: {}", lerp_node.blend_parameter)[..],
@@ -216,7 +222,7 @@ fn main() {
             }
 
             if skeleton_toggle {
-                draw_skeleton(&skeleton, &global_poses, &mut debug_renderer, false);
+                draw_skeleton(&skeleton, &global_poses, &mut debug_renderer, label_toggle);
             }
 
             debug_renderer.render(&mut graphics, &frame, camera_projection);
