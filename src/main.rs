@@ -26,11 +26,7 @@ use piston::window::{
     OpenGLWindow,
 };
 
-use piston::event::{
-    events,
-    RenderEvent,
-    ResizeEvent,
-};
+use piston::event::*;
 
 use vecmath::{Matrix4, mat4_id};
 
@@ -46,9 +42,7 @@ use camera_controllers::{
 use skeletal_animation::*;
 use collada::document::ColladaDocument;
 
-use piston::input::keyboard::Key;
-use piston::input::Button::Keyboard;
-
+mod menu;
 
 fn main() {
 
@@ -96,17 +90,17 @@ fn main() {
 
     let skeleton = Rc::new(RefCell::new(skeleton));
 
-    let anim_clips = load_animations("assets/clips.json").unwrap();
+    let mut asset_manager = AssetManager::new();
+    asset_manager.load_animations("assets/clips.json");
 
     let blend_tree = BlendTreeNode::from_def(
         BlendTreeNodeDef::from_path("assets/walking_blend_tree.json").unwrap(),
-        &anim_clips,
+        &asset_manager.animation_clips,
     );
 
     let mut controller = AnimationController::new(skeleton.clone(), blend_tree);
 
     //let mut skinned_renderer = SkinnedRenderer::from_collada(&mut graphics, collada_document, texture_paths).unwrap();
-
 
     let model = mat4_id();
     let mut projection = CameraPerspective {
@@ -129,14 +123,35 @@ fn main() {
 
     let mut elapsed_time = 0f64;
 
-    let mut skeleton_toggle = false;
-    let mut mesh_toggle = true;
-    let mut speed = 1.0;
-    let mut label_toggle = false;
+    let mut settings = menu::Settings {
+        draw_skeleton: true,
+        draw_labels: true,
+        draw_mesh: true,
+        playback_speed: 1.0,
+    };
 
-    for e in events(window) {
+    let mut menu = menu::Menu::new();
+    menu.add_item("Toggle Skeleton", Box::new( |ref mut settings| {
+        settings.draw_skeleton = !settings.draw_skeleton;
+    }));
 
-        use piston::event::PressEvent;
+    menu.add_item("Toggle Joint Labels", Box::new( |ref mut settings| {
+        settings.draw_labels = !settings.draw_labels;
+    }));
+
+    menu.add_item("Toggle Mesh", Box::new( |ref mut settings| {
+        settings.draw_mesh = !settings.draw_mesh;
+    }));
+
+    menu.add_item("Increase Speed", Box::new( |ref mut settings| {
+        settings.playback_speed *= 1.1;
+    }));
+
+    menu.add_item("Decrease Speed", Box::new( |ref mut settings| {
+        settings.playback_speed *= 0.9;
+    }));
+
+    for e in window.events() {
 
         e.resize(|width, height| {
             debug_renderer.resize(width, height);
@@ -156,48 +171,7 @@ fn main() {
 
         orbit_zoom_camera.event(&e);
 
-        e.press(|button| {
-            match button {
-
-                Keyboard(Key::W) => {
-                    let v = controller.get_param(0) + 0.1;
-                    controller.set_param(0, v);
-                }
-
-                Keyboard(Key::S) => {
-                    let v = controller.get_param(0) - 0.1;
-                    controller.set_param(0, v);
-                }
-
-                Keyboard(Key::D) => {
-                    let v = controller.get_param(1) + 0.1;
-                    controller.set_param(1, v);
-                }
-
-                Keyboard(Key::A) => {
-                    let v = controller.get_param(1) - 0.1;
-                    controller.set_param(1, v);
-                }
-
-                Keyboard(Key::E) => {
-                    let v = controller.get_param(2) + 0.1;
-                    controller.set_param(2, v);
-                }
-                Keyboard(Key::Q) => {
-                    let v = controller.get_param(2) - 0.1;
-                    controller.set_param(2, v);
-                }
-
-                Keyboard(Key::M) => { mesh_toggle = !mesh_toggle; },
-                Keyboard(Key::B) => { skeleton_toggle = !skeleton_toggle },
-
-                Keyboard(Key::P) => { speed *= 1.5; },
-                Keyboard(Key::O) => { speed *= 0.75; },
-                Keyboard(Key::L) => { label_toggle = !label_toggle; },
-
-                _ => {},
-            }
-        });
+        menu.event(&e, &mut settings);
 
         if let Some(args) = e.render_args() {
             graphics.clear(clear, gfx::COLOR | gfx::DEPTH, &frame);
@@ -233,21 +207,24 @@ fn main() {
                 [0.0, 0.0, 1.0, 1.0],
             );
 
-            elapsed_time = elapsed_time + 0.01 * speed;
+            elapsed_time = elapsed_time + 0.01 * settings.playback_speed as f64;
 
             let mut global_poses: [Matrix4<f32>; 64] = [ mat4_id(); 64 ];
 
             controller.get_output_pose(elapsed_time as f32, &mut global_poses[0 .. skeleton.borrow().joints.len()]);
 
-            if mesh_toggle {
+            if settings.draw_mesh {
                 //skinned_renderer.render(&mut graphics, &frame, camera_view, camera_projection, &global_poses);
             }
 
-            if skeleton_toggle {
-                draw_skeleton(skeleton.clone(), &global_poses, &mut debug_renderer, label_toggle);
+            if settings.draw_skeleton {
+                draw_skeleton(skeleton.clone(), &global_poses, &mut debug_renderer, settings.draw_labels);
             }
 
+            menu.draw(&mut debug_renderer);
+
             debug_renderer.render(&mut graphics, &frame, camera_projection);
+
 
             graphics.end_frame();
         }
