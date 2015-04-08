@@ -1,7 +1,7 @@
 use gfx_debug_draw::DebugRenderer;
 use gfx_device_gl::Resources as GlResources; // FIXME
 
-use piston::event::{GenericEvent, PressEvent, ReleaseEvent};
+use piston::event::{GenericEvent, PressEvent, ReleaseEvent, UpdateEvent};
 use piston::input::keyboard::Key;
 use piston::input::Button::Keyboard;
 
@@ -103,6 +103,7 @@ impl<T> MenuItem<T> {
             step_size: step_size,
             get_value: value_getter,
             set_value: value_setter,
+            state: SliderMenuState::Default,
         })
     }
 }
@@ -139,12 +140,19 @@ impl<T> ActionMenuItem<T> {
     }
 }
 
+enum SliderMenuState {
+    Default,
+    Increasing,
+    Decreasing,
+}
+
 pub struct SliderMenuItem<T> {
     label: String,
     range: [f32; 2],
     get_value: Box<Fn(&T) -> f32>,
     set_value: Box<Fn(&mut T, f32) -> ()>,
     step_size: f32,
+    state: SliderMenuState,
 }
 
 impl<T> SliderMenuItem<T> {
@@ -169,17 +177,41 @@ impl<T> SliderMenuItem<T> {
     }
 
     pub fn event<E: GenericEvent>(&mut self, e: &E, settings: &mut T) {
-        e.press(|button| {
-            match button {
-                Keyboard(Key::Right) => {
+
+
+        e.update(|_| {
+            match self.state {
+                SliderMenuState::Increasing => {
                     let current_value = (*self.get_value)(settings);
                     let new_value = self.range[1].min(current_value + self.step_size);
                     (*self.set_value)(settings, new_value);
                 },
-                Keyboard(Key::Left) => {
+                SliderMenuState::Decreasing => {
                     let current_value = (*self.get_value)(settings);
                     let new_value = self.range[0].max(current_value - self.step_size);
                     (*self.set_value)(settings, new_value);
+                },
+                _ => {}
+            }
+        });
+
+
+        e.press(|button| {
+            match button {
+                Keyboard(Key::Right) => {
+                    self.state = SliderMenuState::Increasing
+                },
+                Keyboard(Key::Left) => {
+                    self.state = SliderMenuState::Decreasing
+                },
+                _ => {}
+            }
+        });
+
+        e.release(|button| {
+            match button {
+                Keyboard(Key::Right) | Keyboard(Key::Left) => {
+                    self.state = SliderMenuState::Default
                 },
                 _ => {}
             }

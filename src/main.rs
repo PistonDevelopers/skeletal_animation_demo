@@ -49,6 +49,10 @@ pub struct Settings {
     pub draw_labels: bool,
     pub draw_mesh: bool,
     pub playback_speed: f32,
+
+    pub param_1: f32,
+    pub param_2: f32,
+    pub param_3: f32,
 }
 
 fn main() {
@@ -89,8 +93,9 @@ fn main() {
         "assets/eyelashes01.png",
     ];
 
+    let collada_document = ColladaDocument::from_path(&Path::new("assets/suit_guy.dae")).unwrap();
+
     let skeleton = {
-        let collada_document = ColladaDocument::from_path(&Path::new("assets/suit_guy.dae")).unwrap();
         let skeleton_set = collada_document.get_skeletons().unwrap();
         skeleton_set[0].clone()
     };
@@ -131,10 +136,15 @@ fn main() {
     let mut elapsed_time = 0f64;
 
     let mut settings = Settings {
+
         draw_skeleton: true,
         draw_labels: true,
         draw_mesh: true,
         playback_speed: 1.0,
+
+        param_1: 0.0,
+        param_2: 0.0,
+        param_3: 0.0,
     };
 
     let mut menu = menu::Menu::<Settings>::new();
@@ -160,6 +170,30 @@ fn main() {
         0.1,
         Box::new( |ref settings| { settings.playback_speed }),
         Box::new( |ref mut settings, value| { settings.playback_speed = value }),
+    ));
+
+    menu.add_item(menu::MenuItem::slider_item(
+        "Param 1 = ",
+        [0.0, 1.0],
+        0.01,
+        Box::new( |ref settings| { settings.param_1 }),
+        Box::new( |ref mut settings, value| { settings.param_1 = value }),
+    ));
+
+    menu.add_item(menu::MenuItem::slider_item(
+        "Param 2 = ",
+        [0.0, 1.0],
+        0.01,
+        Box::new( |ref settings| { settings.param_2 }),
+        Box::new( |ref mut settings, value| { settings.param_2 = value }),
+    ));
+
+    menu.add_item(menu::MenuItem::slider_item(
+        "Param 3 = ",
+        [0.0, 1.0],
+        0.01,
+        Box::new( |ref settings| { settings.param_3 }),
+        Box::new( |ref mut settings, value| { settings.param_3 = value }),
     ));
 
     for e in window.events() {
@@ -221,6 +255,10 @@ fn main() {
             elapsed_time = elapsed_time + 0.01 * settings.playback_speed as f64;
 
             let mut global_poses: [Matrix4<f32>; 64] = [ mat4_id(); 64 ];
+
+            controller.set_param(0, settings.param_1);
+            controller.set_param(1, settings.param_2);
+            controller.set_param(2, settings.param_3);
 
             controller.get_output_pose(elapsed_time as f32, &mut global_poses[0 .. skeleton.borrow().joints.len()]);
 
