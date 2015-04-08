@@ -44,6 +44,13 @@ use collada::document::ColladaDocument;
 
 mod menu;
 
+pub struct Settings {
+    pub draw_skeleton: bool,
+    pub draw_labels: bool,
+    pub draw_mesh: bool,
+    pub playback_speed: f32,
+}
+
 fn main() {
 
     env_logger::init().unwrap();
@@ -123,33 +130,37 @@ fn main() {
 
     let mut elapsed_time = 0f64;
 
-    let mut settings = menu::Settings {
+    let mut settings = Settings {
         draw_skeleton: true,
         draw_labels: true,
         draw_mesh: true,
         playback_speed: 1.0,
     };
 
-    let mut menu = menu::Menu::new();
-    menu.add_item("Toggle Skeleton", Box::new( |ref mut settings| {
-        settings.draw_skeleton = !settings.draw_skeleton;
-    }));
+    let mut menu = menu::Menu::<Settings>::new();
 
-    menu.add_item("Toggle Joint Labels", Box::new( |ref mut settings| {
-        settings.draw_labels = !settings.draw_labels;
-    }));
+    menu.add_item(menu::MenuItem::action_item(
+        "Toggle Skeleton",
+        Box::new( |ref mut settings| { settings.draw_skeleton = !settings.draw_skeleton; })
+    ));
 
-    menu.add_item("Toggle Mesh", Box::new( |ref mut settings| {
-        settings.draw_mesh = !settings.draw_mesh;
-    }));
+    menu.add_item(menu::MenuItem::action_item(
+        "Toggle Joint Labels",
+        Box::new( |ref mut settings| { settings.draw_labels = !settings.draw_labels; })
+    ));
 
-    menu.add_item("Increase Speed", Box::new( |ref mut settings| {
-        settings.playback_speed *= 1.1;
-    }));
+    menu.add_item(menu::MenuItem::action_item(
+        "Toggle Mesh",
+        Box::new( |ref mut settings| { settings.draw_mesh = !settings.draw_mesh; })
+    ));
 
-    menu.add_item("Decrease Speed", Box::new( |ref mut settings| {
-        settings.playback_speed *= 0.9;
-    }));
+    menu.add_item(menu::MenuItem::slider_item(
+        "Playback Speed = ",
+        [0.0, 5.0],
+        0.1,
+        Box::new( |ref settings| { settings.playback_speed }),
+        Box::new( |ref mut settings, value| { settings.playback_speed = value }),
+    ));
 
     for e in window.events() {
 
@@ -221,7 +232,7 @@ fn main() {
                 draw_skeleton(skeleton.clone(), &global_poses, &mut debug_renderer, settings.draw_labels);
             }
 
-            menu.draw(&mut debug_renderer);
+            menu.draw(&settings, &mut debug_renderer);
 
             debug_renderer.render(&mut graphics, &frame, camera_projection);
 
