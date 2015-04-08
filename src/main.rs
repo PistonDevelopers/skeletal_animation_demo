@@ -15,8 +15,6 @@ extern crate vecmath;
 use gfx::traits::*;
 use gfx_debug_draw::DebugRenderer;
 
-use std::collections::HashMap;
-
 use gl::Gl;
 
 use std::path::Path;
@@ -34,7 +32,7 @@ use piston::event::{
     ResizeEvent,
 };
 
-use vecmath::mat4_id;
+use vecmath::{Matrix4, mat4_id};
 
 use sdl2_window::Sdl2Window;
 
@@ -53,8 +51,6 @@ use piston::input::Button::Keyboard;
 
 
 fn main() {
-
-    use std::f32::consts::PI;
 
     env_logger::init().unwrap();
 
@@ -92,27 +88,24 @@ fn main() {
         "assets/eyelashes01.png",
     ];
 
-    let collada_document = ColladaDocument::from_path(&Path::new("assets/suit_guy.dae")).unwrap();
-    let mut skeleton_set = collada_document.get_skeletons().unwrap();
-    let skeleton = &skeleton_set[0];
+    let skeleton = {
+        let collada_document = ColladaDocument::from_path(&Path::new("assets/suit_guy.dae")).unwrap();
+        let skeleton_set = collada_document.get_skeletons().unwrap();
+        skeleton_set[0].clone()
+    };
 
-    let mut anim_clips = load_animations("assets/clips.json").unwrap();
+    let skeleton = Rc::new(RefCell::new(skeleton));
+
+    let anim_clips = load_animations("assets/clips.json").unwrap();
 
     let blend_tree = BlendTreeNode::from_def(
         BlendTreeNodeDef::from_path("assets/walking_blend_tree.json").unwrap(),
         &anim_clips,
     );
 
+    let mut controller = AnimationController::new(skeleton.clone(), blend_tree);
+
     //let mut skinned_renderer = SkinnedRenderer::from_collada(&mut graphics, collada_document, texture_paths).unwrap();
-
-    let rotate_on_z = [
-        [PI.cos(), -PI.sin(), 0.0, 0.0],
-        [PI.sin(), PI.cos(), 0.0, 0.0],
-        [0.0, 0.0, 1.0, 0.0],
-        [0.0, 0.0, 0.0, 1.0],
-    ];
-
-    let mut params: [f32; 3] = [0.0, 0.0, 0.0];
 
 
     let model = mat4_id();
@@ -166,14 +159,34 @@ fn main() {
         e.press(|button| {
             match button {
 
-                Keyboard(Key::W) => { params[0] -= 0.1; },
-                Keyboard(Key::S) => { params[0] += 0.1; },
+                Keyboard(Key::W) => {
+                    let v = controller.get_param(0) + 0.1;
+                    controller.set_param(0, v);
+                }
 
-                Keyboard(Key::A) => { params[1] -= 0.1; },
-                Keyboard(Key::D) => { params[1] += 0.1; },
+                Keyboard(Key::S) => {
+                    let v = controller.get_param(0) - 0.1;
+                    controller.set_param(0, v);
+                }
 
-                Keyboard(Key::Q) => { params[2] -= 0.1; },
-                Keyboard(Key::E) => { params[2] += 0.1; },
+                Keyboard(Key::D) => {
+                    let v = controller.get_param(1) + 0.1;
+                    controller.set_param(1, v);
+                }
+
+                Keyboard(Key::A) => {
+                    let v = controller.get_param(1) - 0.1;
+                    controller.set_param(1, v);
+                }
+
+                Keyboard(Key::E) => {
+                    let v = controller.get_param(2) + 0.1;
+                    controller.set_param(2, v);
+                }
+                Keyboard(Key::Q) => {
+                    let v = controller.get_param(2) - 0.1;
+                    controller.set_param(2, v);
+                }
 
                 Keyboard(Key::M) => { mesh_toggle = !mesh_toggle; },
                 Keyboard(Key::B) => { skeleton_toggle = !skeleton_toggle },
@@ -220,36 +233,18 @@ fn main() {
                 [0.0, 0.0, 1.0, 1.0],
             );
 
-            elapsed_time = elapsed_time + (0.01 + 0.02 * params[0] as f64) * speed;
+            elapsed_time = elapsed_time + 0.01 * speed;
 
-            debug_renderer.draw_text_on_screen(
-                &format!("Blend Factor: {}", params[0]),
-                [10, 10],
-                [1.0, 0.0, 0.0, 1.0],
-            );
+            let mut global_poses: [Matrix4<f32>; 64] = [ mat4_id(); 64 ];
 
-            debug_renderer.draw_text_on_screen(
-                &format!("LR: {}", params[1]),
-                [10, 40],
-                [1.0, 0.0, 0.0, 1.0],
-            );
-
-            debug_renderer.draw_text_on_screen(
-                &format!("ROOT: {}", params[2]),
-                [10, 80],
-                [1.0, 0.0, 0.0, 1.0],
-            );
-
-            let mut local_poses = [ SQT { translation: [0.0, 0.0, 0.0], scale: 0.0, rotation: (0.0, [0.0, 0.0, 0.0]) }; 64 ];
-            blend_tree.get_output_pose(elapsed_time as f32, &params[..], &mut local_poses[0 .. skeleton.joints.len()]);
-            let global_poses = calculate_global_poses(skeleton, &local_poses);
+            controller.get_output_pose(elapsed_time as f32, &mut global_poses[0 .. skeleton.borrow().joints.len()]);
 
             if mesh_toggle {
                 //skinned_renderer.render(&mut graphics, &frame, camera_view, camera_projection, &global_poses);
             }
 
             if skeleton_toggle {
-                draw_skeleton(&skeleton, &global_poses, &mut debug_renderer, label_toggle);
+                draw_skeleton(skeleton.clone(), &global_poses, &mut debug_renderer, label_toggle);
             }
 
             debug_renderer.render(&mut graphics, &frame, camera_projection);
