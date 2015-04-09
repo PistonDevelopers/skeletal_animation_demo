@@ -128,8 +128,6 @@ fn main() {
         std::mem::transmute(sdl2::video::gl_get_proc_address(s))
     });
 
-    let mut elapsed_time = 0f64;
-
     let mut settings = Settings {
 
         draw_skeleton: true,
@@ -159,8 +157,8 @@ fn main() {
 
     menu.add_item(menu::MenuItem::slider_item(
         "Playback Speed = ",
-        [0.0, 5.0],
-        0.1,
+        [-5.0, 5.0],
+        0.01,
         Box::new( |ref settings| { settings.playback_speed }),
         Box::new( |ref mut settings, value| { settings.playback_speed = value }),
     ));
@@ -187,6 +185,9 @@ fn main() {
 
     for e in window.events() {
 
+        orbit_zoom_camera.event(&e);
+        menu.event(&e, &mut settings);
+
         e.resize(|width, height| {
             debug_renderer.resize(width, height);
 
@@ -203,11 +204,19 @@ fn main() {
             }.projection();
         });
 
-        orbit_zoom_camera.event(&e);
+        e.update(|args| {
 
-        menu.event(&e, &mut settings);
+            controller.set_playback_speed(settings.playback_speed as f64);
 
-        if let Some(args) = e.render_args() {
+            for (param, &value) in settings.params.iter() {
+                controller.set_param_value(param, value);
+            }
+
+            controller.update(args.dt);
+        });
+
+        e.render(|args| {
+
             graphics.clear(clear, gfx::COLOR | gfx::DEPTH, &frame);
 
             let camera_view = orbit_zoom_camera.camera(args.ext_dt).orthogonal();
@@ -241,15 +250,9 @@ fn main() {
                 [0.0, 0.0, 1.0, 1.0],
             );
 
-            elapsed_time = elapsed_time + 0.01 * settings.playback_speed as f64;
-
             let mut global_poses: [Matrix4<f32>; 64] = [ mat4_id(); 64 ];
 
-            for (param, &value) in settings.params.iter() {
-                controller.set_param_value(param, value);
-            }
-
-            controller.get_output_pose(elapsed_time as f32, &mut global_poses[0 .. skeleton.borrow().joints.len()]);
+            controller.get_output_pose(args.ext_dt, &mut global_poses[0 .. skeleton.borrow().joints.len()]);
 
             if settings.draw_mesh {
                 //skinned_renderer.render(&mut graphics, &frame, camera_view, camera_projection, &global_poses);
@@ -263,8 +266,8 @@ fn main() {
 
             debug_renderer.render(&mut graphics, &frame, camera_projection);
 
-
             graphics.end_frame();
-        }
+
+        });
     }
 }
