@@ -1,0 +1,70 @@
+{
+
+	"parameters": [
+		"forward-speed",
+		"forward-to-strafe",
+		"walk-to-run",
+		"left-to-right"
+	],
+
+	"states": [ {
+		"name": "walking-forward",
+		"blend_tree": {
+			"type": "LerpNode",
+			"param": "forward-to-strafe",
+			"inputs": [ {
+				"type": "LerpNode",
+				"param": "walk-to-run",
+				"inputs": [{
+					"type": "ClipNode",
+					"clip_source": "walk-forward"
+				}, {
+					"type": "ClipNode",
+					"clip_source": "run-forward"
+				}]
+
+			}, {
+				"type": "LerpNode",
+				"param": "left-to-right",
+				"inputs": [{
+					"type": "ClipNode",
+					"clip_source": "walk-left",
+					"frame_offset": 14
+				}, {
+					"type": "ClipNode",
+					"clip_source": "walk-right"
+				}]
+			}]
+		},
+
+		"transitions": [ {
+			"target_state": "stand-idle",
+			"type": "crossover",
+			"duration": 0.5,
+			"condition": {
+				"parameter": "forward-speed",
+				"operator": "<",
+				"value": 0.1
+			}
+		}]
+
+	}, {
+		"name": "stand-idle",
+		"blend_tree": {
+			"type": "ClipNode",
+			"clip_source": "stand-idle"
+		},
+		"transitions": [ {
+			"target_state": "walking-forward",
+			"type": "crossover",
+			"duration": 0.5,
+			"condition": {
+				"parameter": "forward-speed",
+				"operator": ">",
+				"value": 0.1
+			}
+		} ]
+	} ],
+
+	"initial_state": "stand-idle"
+}

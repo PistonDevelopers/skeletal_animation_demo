@@ -20,4 +20,9 @@
 	"looping": true,
 	"rotate-z": 180,
 	"duration": 1.0
+}, {
+	"name": "stand-idle",
+	"source": "assets/standing_idle.dae",
+	"looping": true,
+	"rotate-z": 90
 }]

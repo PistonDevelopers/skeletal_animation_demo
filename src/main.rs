@@ -104,8 +104,8 @@ fn main() {
     let mut asset_manager = AssetManager::new();
     asset_manager.load_animations("assets/clips.json");
 
-    let blend_tree_def = BlendTreeNodeDef::from_path("assets/walking_blend_tree.json").unwrap();
-    let mut controller = AnimationController::new(skeleton.clone(), blend_tree_def, &asset_manager.animation_clips);
+    let controller_def = AssetManager::load_def_from_path("assets/human_controller.json").unwrap();
+    let mut controller = AnimationController::new(controller_def, skeleton.clone(), &asset_manager.animation_clips);
 
     //let mut skinned_renderer = SkinnedRenderer::from_collada(&mut graphics, collada_document, texture_paths).unwrap();
 
@@ -131,7 +131,7 @@ fn main() {
     let mut settings = Settings {
 
         draw_skeleton: true,
-        draw_labels: true,
+        draw_labels: false,
         draw_mesh: true,
         playback_speed: 1.0,
 
