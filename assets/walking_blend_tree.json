@@ -1,9 +1,9 @@
 {
 	"type": "LerpNode",
-	"param": 0,
+	"param": "forward-to-strafe",
 	"inputs": [ {
 		"type": "LerpNode",
-		"param": 1,
+		"param": "walk-to-run",
 		"inputs": [{
 			"type": "ClipNode",
 			"clip_source": "walk-forward"
@@ -14,7 +14,7 @@
 
 	}, {
 		"type": "LerpNode",
-		"param": 2,
+		"param": "left-to-right",
 		"inputs": [{
 			"type": "ClipNode",
 			"clip_source": "walk-left",

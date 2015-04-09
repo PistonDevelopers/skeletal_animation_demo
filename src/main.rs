@@ -20,6 +20,7 @@ use gl::Gl;
 use std::path::Path;
 use std::rc::Rc;
 use std::cell::RefCell;
+use std::collections::HashMap;
 
 use piston::window::{
     WindowSettings,
@@ -50,9 +51,7 @@ pub struct Settings {
     pub draw_mesh: bool,
     pub playback_speed: f32,
 
-    pub param_1: f32,
-    pub param_2: f32,
-    pub param_3: f32,
+    pub params: HashMap<String, f32>,
 }
 
 fn main() {
@@ -105,12 +104,8 @@ fn main() {
     let mut asset_manager = AssetManager::new();
     asset_manager.load_animations("assets/clips.json");
 
-    let blend_tree = BlendTreeNode::from_def(
-        BlendTreeNodeDef::from_path("assets/walking_blend_tree.json").unwrap(),
-        &asset_manager.animation_clips,
-    );
-
-    let mut controller = AnimationController::new(skeleton.clone(), blend_tree);
+    let blend_tree_def = BlendTreeNodeDef::from_path("assets/walking_blend_tree.json").unwrap();
+    let mut controller = AnimationController::new(skeleton.clone(), blend_tree_def, &asset_manager.animation_clips);
 
     //let mut skinned_renderer = SkinnedRenderer::from_collada(&mut graphics, collada_document, texture_paths).unwrap();
 
@@ -142,9 +137,7 @@ fn main() {
         draw_mesh: true,
         playback_speed: 1.0,
 
-        param_1: 0.0,
-        param_2: 0.0,
-        param_3: 0.0,
+        params: HashMap::new(),
     };
 
     let mut menu = menu::Menu::<Settings>::new();
@@ -172,29 +165,25 @@ fn main() {
         Box::new( |ref mut settings, value| { settings.playback_speed = value }),
     ));
 
-    menu.add_item(menu::MenuItem::slider_item(
-        "Param 1 = ",
-        [0.0, 1.0],
-        0.01,
-        Box::new( |ref settings| { settings.param_1 }),
-        Box::new( |ref mut settings, value| { settings.param_1 = value }),
-    ));
+    for (param, &value) in controller.get_parameters().iter() {
+        settings.params.insert(param.clone(), value);
 
-    menu.add_item(menu::MenuItem::slider_item(
-        "Param 2 = ",
-        [0.0, 1.0],
-        0.01,
-        Box::new( |ref settings| { settings.param_2 }),
-        Box::new( |ref mut settings, value| { settings.param_2 = value }),
-    ));
+        // Apparently need to make our own string copies to move into each closure..
+        let param_copy_1 = param.clone();
+        let param_copy_2 = param.clone();
 
-    menu.add_item(menu::MenuItem::slider_item(
-        "Param 3 = ",
-        [0.0, 1.0],
-        0.01,
-        Box::new( |ref settings| { settings.param_3 }),
-        Box::new( |ref mut settings, value| { settings.param_3 = value }),
-    ));
+        menu.add_item(menu::MenuItem::slider_item(
+            &format!("Param[{}] = ", param)[..],
+            [0.0, 1.0],
+            0.01,
+            Box::new( move |ref settings| {
+                settings.params[&param_copy_1[..]]
+            }),
+            Box::new( move |ref mut settings, value| {
+                settings.params.insert(param_copy_2.clone(), value);
+            }),
+        ));
+    }
 
     for e in window.events() {
 
@@ -256,9 +245,9 @@ fn main() {
 
             let mut global_poses: [Matrix4<f32>; 64] = [ mat4_id(); 64 ];
 
-            controller.set_param(0, settings.param_1);
-            controller.set_param(1, settings.param_2);
-            controller.set_param(2, settings.param_3);
+            for (param, &value) in settings.params.iter() {
+                controller.set_param_value(param, value);
+            }
 
             controller.get_output_pose(elapsed_time as f32, &mut global_poses[0 .. skeleton.borrow().joints.len()]);
 
