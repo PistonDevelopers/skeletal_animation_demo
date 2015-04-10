@@ -15,8 +15,6 @@ extern crate vecmath;
 use gfx::traits::*;
 use gfx_debug_draw::DebugRenderer;
 
-use gl::Gl;
-
 use std::path::Path;
 use std::rc::Rc;
 use std::cell::RefCell;
@@ -94,9 +92,10 @@ fn main() {
 
     let collada_document = ColladaDocument::from_path(&Path::new("assets/suit_guy.dae")).unwrap();
 
+    // TODO better.. we keep reloading the same document over and over for different things...
     let skeleton = {
         let skeleton_set = collada_document.get_skeletons().unwrap();
-        skeleton_set[0].clone()
+        Skeleton::from_collada(&skeleton_set[0])
     };
 
     let skeleton = Rc::new(RefCell::new(skeleton));
@@ -255,7 +254,7 @@ fn main() {
             }
 
             if settings.draw_skeleton {
-                draw_skeleton(skeleton.clone(), &global_poses, &mut debug_renderer, settings.draw_labels);
+                skeleton.borrow().draw(&global_poses, &mut debug_renderer, settings.draw_labels);
             }
 
             menu.draw(&settings, &mut debug_renderer);

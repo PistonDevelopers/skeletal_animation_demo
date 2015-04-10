@@ -115,7 +115,7 @@ pub struct ActionMenuItem<T> {
 }
 
 impl<T> ActionMenuItem<T> {
-    pub fn draw(&self, settings: &T, debug_renderer: &mut DebugRenderer<GlResources>, position: [i32; 2], selected: bool) {
+    pub fn draw(&self, _settings: &T, debug_renderer: &mut DebugRenderer<GlResources>, position: [i32; 2], selected: bool) {
 
         let color = if selected {
             [1.0, 0.5, 0.5, 1.0]
