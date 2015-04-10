@@ -107,7 +107,7 @@ fn main() {
     let controller_def = AssetManager::load_def_from_path("assets/human_controller.json").unwrap();
     let mut controller = AnimationController::new(controller_def, skeleton.clone(), &asset_manager.animation_clips);
 
-    //let mut skinned_renderer = SkinnedRenderer::from_collada(&mut graphics, collada_document, texture_paths).unwrap();
+    let mut skinned_renderer = SkinnedRenderer::from_collada(&mut graphics, collada_document, texture_paths).unwrap();
 
     let model = mat4_id();
     let mut projection = CameraPerspective {
@@ -123,10 +123,6 @@ fn main() {
     );
 
     // Start event loop
-
-    Gl::load_with(|s| unsafe {
-        std::mem::transmute(sdl2::video::gl_get_proc_address(s))
-    });
 
     let mut settings = Settings {
 
@@ -255,7 +251,7 @@ fn main() {
             controller.get_output_pose(args.ext_dt, &mut global_poses[0 .. skeleton.borrow().joints.len()]);
 
             if settings.draw_mesh {
-                //skinned_renderer.render(&mut graphics, &frame, camera_view, camera_projection, &global_poses);
+                skinned_renderer.render(&mut graphics, &frame, camera_view, camera_projection, &global_poses);
             }
 
             if settings.draw_skeleton {
