@@ -12,13 +12,14 @@ extern crate shader_version;
 extern crate skeletal_animation;
 extern crate vecmath;
 
-use gfx::traits::*;
-use gfx_debug_draw::DebugRenderer;
-
 use std::path::Path;
 use std::rc::Rc;
 use std::cell::RefCell;
 use std::collections::HashMap;
+
+use gfx::traits::*;
+
+use gfx_debug_draw::DebugRenderer;
 
 use piston::window::{
     WindowSettings,
@@ -42,6 +43,7 @@ use skeletal_animation::*;
 use collada::document::ColladaDocument;
 
 mod menu;
+mod sdl2_window_output;
 
 pub struct Settings {
     pub draw_skeleton: bool,
@@ -57,7 +59,6 @@ fn main() {
     env_logger::init().unwrap();
 
     let (win_width, win_height) = (640, 480);
-
     let mut window = Sdl2Window::new(
         shader_version::OpenGL::_3_2,
         WindowSettings::new(
@@ -68,9 +69,9 @@ fn main() {
 
     let mut graphics = gfx_device_gl::create(|s| window.get_proc_address(s)).into_graphics();
 
-    let mut frame = gfx::Frame::new(win_width as u16, win_height as u16);
-
     let window = Rc::new(RefCell::new(window));
+
+    let window_output = sdl2_window_output::WindowOutput::new(window.clone(), graphics.factory.get_main_frame_buffer());
 
     let clear = gfx::ClearData {
         color: [0.3, 0.3, 0.3, 1.0],
@@ -78,7 +79,7 @@ fn main() {
         stencil: 0
     };
 
-    let mut debug_renderer = DebugRenderer::new(&mut graphics, [frame.width as u32, frame.height as u32], 64, None, None).ok().unwrap();
+    let mut debug_renderer = DebugRenderer::new(&mut graphics, [win_width as u32, win_height as u32], 64, None, None).ok().unwrap();
 
     // TODO - these are (usually) available in the COLLADA file, associated with a <mesh> element in a somewhat convoluted way
     let texture_paths = vec![
@@ -186,10 +187,6 @@ fn main() {
         e.resize(|width, height| {
             debug_renderer.resize(width, height);
 
-            // Update frame
-            frame.width = width as u16;
-            frame.height = height as u16;
-
             // Update projection matrix
             projection = CameraPerspective {
                 fov: 90.0f32,
@@ -212,7 +209,7 @@ fn main() {
 
         e.render(|args| {
 
-            graphics.clear(clear, gfx::COLOR | gfx::DEPTH, &frame);
+            graphics.clear(clear, gfx::COLOR | gfx::DEPTH, &window_output);
 
             let camera_view = orbit_zoom_camera.camera(args.ext_dt).orthogonal();
 
@@ -250,7 +247,7 @@ fn main() {
             controller.get_output_pose(args.ext_dt, &mut global_poses[0 .. skeleton.borrow().joints.len()]);
 
             if settings.draw_mesh {
-                skinned_renderer.render(&mut graphics, &frame, camera_view, camera_projection, &global_poses);
+                skinned_renderer.render(&mut graphics, &window_output, camera_view, camera_projection, &global_poses);
             }
 
             if settings.draw_skeleton {
@@ -259,7 +256,7 @@ fn main() {
 
             menu.draw(&settings, &mut debug_renderer);
 
-            debug_renderer.render(&mut graphics, &frame, camera_projection);
+            debug_renderer.render(&mut graphics, &window_output, camera_projection);
 
             graphics.end_frame();
 
