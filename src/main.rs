@@ -99,7 +99,7 @@ fn main() {
         Skeleton::from_collada(&skeleton_set[0])
     };
 
-    let skeleton = Rc::new(RefCell::new(skeleton));
+    let skeleton = Rc::new(skeleton);
 
     let mut asset_manager = AssetManager::new();
     asset_manager.load_animations("assets/clips.json");
@@ -244,14 +244,14 @@ fn main() {
 
             let mut global_poses: [Matrix4<f32>; 64] = [ mat4_id(); 64 ];
 
-            controller.get_output_pose(args.ext_dt, &mut global_poses[0 .. skeleton.borrow().joints.len()]);
+            controller.get_output_pose(args.ext_dt, &mut global_poses[0 .. skeleton.joints.len()]);
 
             if settings.draw_mesh {
                 skinned_renderer.render(&mut graphics, &window_output, camera_view, camera_projection, &global_poses);
             }
 
             if settings.draw_skeleton {
-                skeleton.borrow().draw(&global_poses, &mut debug_renderer, settings.draw_labels);
+                skeleton.draw(&global_poses, &mut debug_renderer, settings.draw_labels);
             }
 
             menu.draw(&settings, &mut debug_renderer);
