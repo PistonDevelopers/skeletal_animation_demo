@@ -44,3 +44,6 @@ git = "https://github.com/PistonDevelopers/skeletal_animation"
 
 [dependencies.collada]
 git = "https://github.com/PistonDevelopers/piston_collada"
+
+[dependencies.dev_menu]
+git = "https://github.com/PistonDevelopers/dev_menu"

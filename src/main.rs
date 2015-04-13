@@ -11,6 +11,7 @@ extern crate sdl2_window;
 extern crate shader_version;
 extern crate skeletal_animation;
 extern crate vecmath;
+extern crate dev_menu;
 
 use std::path::Path;
 use std::rc::Rc;
@@ -42,7 +43,6 @@ use camera_controllers::{
 use skeletal_animation::*;
 use collada::document::ColladaDocument;
 
-mod menu;
 mod sdl2_window_output;
 
 pub struct Settings {
@@ -62,7 +62,7 @@ fn main() {
     let mut window = Sdl2Window::new(
         shader_version::OpenGL::_3_2,
         WindowSettings::new(
-            "Animation Viewer".to_string(),
+            "Skeletal Animation Demo".to_string(),
             piston::window::Size { width: 640, height: 480 }
         ).exit_on_esc(true)
     );
@@ -134,24 +134,24 @@ fn main() {
         params: HashMap::new(),
     };
 
-    let mut menu = menu::Menu::<Settings>::new();
+    let mut menu = dev_menu::Menu::<Settings>::new();
 
-    menu.add_item(menu::MenuItem::action_item(
+    menu.add_item(dev_menu::MenuItem::action_item(
         "Toggle Skeleton",
         Box::new( |ref mut settings| { settings.draw_skeleton = !settings.draw_skeleton; })
     ));
 
-    menu.add_item(menu::MenuItem::action_item(
+    menu.add_item(dev_menu::MenuItem::action_item(
         "Toggle Joint Labels",
         Box::new( |ref mut settings| { settings.draw_labels = !settings.draw_labels; })
     ));
 
-    menu.add_item(menu::MenuItem::action_item(
+    menu.add_item(dev_menu::MenuItem::action_item(
         "Toggle Mesh",
         Box::new( |ref mut settings| { settings.draw_mesh = !settings.draw_mesh; })
     ));
 
-    menu.add_item(menu::MenuItem::slider_item(
+    menu.add_item(dev_menu::MenuItem::slider_item(
         "Playback Speed = ",
         [-5.0, 5.0],
         0.01,
@@ -166,7 +166,7 @@ fn main() {
         let param_copy_1 = param.clone();
         let param_copy_2 = param.clone();
 
-        menu.add_item(menu::MenuItem::slider_item(
+        menu.add_item(dev_menu::MenuItem::slider_item(
             &format!("Param[{}] = ", param)[..],
             [0.0, 1.0],
             0.01,
