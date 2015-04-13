@@ -5,7 +5,7 @@ version = "0.0.1"
 authors = ["Steve Jahns <s.t.jahns@gmail.com>"]
 
 [[bin]]
-name = "Skeletal Animation Demo"
+name = "demo"
 path = "src/main.rs"
 
 [dependencies]
