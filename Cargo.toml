@@ -1,11 +1,11 @@
 [package]
 
-name = "skinned-animation-viewer"
+name = "skeletal_animation_demo"
 version = "0.0.1"
 authors = ["Steve Jahns <s.t.jahns@gmail.com>"]
 
 [[bin]]
-name = "viewer"
+name = "Skeletal Animation Demo"
 path = "src/main.rs"
 
 [dependencies]
