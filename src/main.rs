@@ -67,11 +67,12 @@ fn main() {
         ).exit_on_esc(true)
     );
 
-    let mut graphics = gfx_device_gl::create(|s| window.get_proc_address(s)).into_graphics();
+    let (mut device, mut factory) = gfx_device_gl::create(|s| window.get_proc_address(s));
+    let mut renderer = factory.create_renderer();
 
     let window = Rc::new(RefCell::new(window));
 
-    let window_output = sdl2_window_output::WindowOutput::new(window.clone(), graphics.factory.get_main_frame_buffer());
+    let window_output = sdl2_window_output::WindowOutput::new(window.clone(), factory.get_main_frame_buffer());
 
     let clear = gfx::ClearData {
         color: [0.3, 0.3, 0.3, 1.0],
@@ -79,7 +80,7 @@ fn main() {
         stencil: 0
     };
 
-    let mut debug_renderer = DebugRenderer::new(&mut graphics, [win_width as u32, win_height as u32], 64, None, None).ok().unwrap();
+    let mut debug_renderer = DebugRenderer::new(&device, &mut factory, [win_width as u32, win_height as u32], 64, None, None).ok().unwrap();
 
     // TODO - these are (usually) available in the COLLADA file, associated with a <mesh> element in a somewhat convoluted way
     let texture_paths = vec![
@@ -107,7 +108,7 @@ fn main() {
     let controller_def = AssetManager::load_def_from_path("assets/human_controller.json").unwrap();
     let mut controller = AnimationController::new(controller_def, skeleton.clone(), &asset_manager.animation_clips);
 
-    let mut skinned_renderer = SkinnedRenderer::from_collada(&mut graphics, collada_document, texture_paths).unwrap();
+    let mut skinned_renderer = SkinnedRenderer::from_collada(&mut factory, collada_document, texture_paths).unwrap();
 
     let model = mat4_id();
     let mut projection = CameraPerspective {
@@ -209,7 +210,7 @@ fn main() {
 
         e.render(|args| {
 
-            graphics.clear(clear, gfx::COLOR | gfx::DEPTH, &window_output);
+            renderer.clear(clear, gfx::COLOR | gfx::DEPTH, &window_output);
 
             let camera_view = orbit_zoom_camera.camera(args.ext_dt).orthogonal();
 
@@ -247,7 +248,7 @@ fn main() {
             controller.get_output_pose(args.ext_dt, &mut global_poses[0 .. skeleton.joints.len()]);
 
             if settings.draw_mesh {
-                skinned_renderer.render(&mut graphics, &window_output, camera_view, camera_projection, &global_poses);
+                skinned_renderer.render(&mut renderer, &mut factory, &window_output, camera_view, camera_projection, &global_poses);
             }
 
             if settings.draw_skeleton {
@@ -256,9 +257,14 @@ fn main() {
 
             menu.draw(&settings, &mut debug_renderer);
 
-            debug_renderer.render(&mut graphics, &window_output, camera_projection);
+            debug_renderer.render(&mut renderer, &mut factory, &window_output, camera_projection);
 
-            graphics.end_frame();
+            device.submit(renderer.as_buffer());
+
+            renderer.reset();
+
+            device.after_frame();
+            factory.cleanup();
 
         });
     }
