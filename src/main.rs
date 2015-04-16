@@ -1,30 +1,29 @@
-extern crate gfx_gl as gl;
 extern crate camera_controllers;
 extern crate collada;
+extern crate dev_menu;
 extern crate env_logger;
 extern crate gfx;
 extern crate gfx_debug_draw;
 extern crate gfx_device_gl;
+extern crate gfx_gl as gl;
 extern crate piston;
+extern crate piston_window;
 extern crate sdl2;
 extern crate sdl2_window;
 extern crate shader_version;
 extern crate skeletal_animation;
 extern crate vecmath;
-extern crate dev_menu;
 
 use std::path::Path;
 use std::rc::Rc;
 use std::cell::RefCell;
 use std::collections::HashMap;
 
-use gfx::traits::*;
 
 use gfx_debug_draw::DebugRenderer;
 
 use piston::window::{
     WindowSettings,
-    OpenGLWindow,
 };
 
 use piston::event::*;
@@ -43,8 +42,6 @@ use camera_controllers::{
 use skeletal_animation::*;
 use collada::document::ColladaDocument;
 
-mod sdl2_window_output;
-
 pub struct Settings {
     pub draw_skeleton: bool,
     pub draw_labels: bool,
@@ -59,28 +56,23 @@ fn main() {
     env_logger::init().unwrap();
 
     let (win_width, win_height) = (640, 480);
-    let mut window = Sdl2Window::new(
+    let window = Rc::new(RefCell::new(Sdl2Window::new(
         shader_version::OpenGL::_3_2,
         WindowSettings::new(
             "Skeletal Animation Demo".to_string(),
             piston::window::Size { width: 640, height: 480 }
         ).exit_on_esc(true)
-    );
+    )));
 
-    let (mut device, mut factory) = gfx_device_gl::create(|s| window.get_proc_address(s));
-    let mut renderer = factory.create_renderer();
+    let piston_window = piston_window::PistonWindow::new(window, piston_window::empty_app());
 
-    let window = Rc::new(RefCell::new(window));
-
-    let window_output = sdl2_window_output::WindowOutput::new(window.clone(), factory.get_main_frame_buffer());
-
-    let clear = gfx::ClearData {
-        color: [0.3, 0.3, 0.3, 1.0],
-        depth: 1.0,
-        stencil: 0
-    };
-
-    let mut debug_renderer = DebugRenderer::new(&device, &mut factory, [win_width as u32, win_height as u32], 64, None, None).ok().unwrap();
+    let mut debug_renderer = DebugRenderer::from_canvas(
+        &mut piston_window.canvas.borrow_mut(),
+        [win_width as u32, win_height as u32],
+        64,
+        None,
+        None,
+    ).ok().unwrap();
 
     // TODO - these are (usually) available in the COLLADA file, associated with a <mesh> element in a somewhat convoluted way
     let texture_paths = vec![
@@ -108,7 +100,7 @@ fn main() {
     let controller_def = AssetManager::load_def_from_path("assets/human_controller.json").unwrap();
     let mut controller = AnimationController::new(controller_def, skeleton.clone(), &asset_manager.animation_clips);
 
-    let mut skinned_renderer = SkinnedRenderer::from_collada(&mut factory, collada_document, texture_paths).unwrap();
+    let mut skinned_renderer = SkinnedRenderer::from_collada(&mut piston_window.canvas.borrow_mut().factory, collada_document, texture_paths).unwrap();
 
     let model = mat4_id();
     let mut projection = CameraPerspective {
@@ -180,7 +172,7 @@ fn main() {
         ));
     }
 
-    for e in window.events() {
+    for e in piston_window {
 
         orbit_zoom_camera.event(&e);
         menu.event(&e, &mut settings);
@@ -208,9 +200,19 @@ fn main() {
             controller.update(args.dt);
         });
 
-        e.render(|args| {
+        e.draw_3d(|canvas| {
 
-            renderer.clear(clear, gfx::COLOR | gfx::DEPTH, &window_output);
+            let args = e.render_args().unwrap();
+
+            canvas.renderer.clear(
+                gfx::ClearData {
+                    color: [0.3, 0.3, 0.3, 1.0],
+                    depth: 1.0,
+                    stencil: 0,
+                },
+                gfx::COLOR | gfx::DEPTH,
+                &canvas.output
+            );
 
             let camera_view = orbit_zoom_camera.camera(args.ext_dt).orthogonal();
 
@@ -248,7 +250,7 @@ fn main() {
             controller.get_output_pose(args.ext_dt, &mut global_poses[0 .. skeleton.joints.len()]);
 
             if settings.draw_mesh {
-                skinned_renderer.render(&mut renderer, &mut factory, &window_output, camera_view, camera_projection, &global_poses);
+                skinned_renderer.render_canvas(canvas, camera_view, camera_projection, &global_poses);
             }
 
             if settings.draw_skeleton {
@@ -257,15 +259,7 @@ fn main() {
 
             menu.draw(&settings, &mut debug_renderer);
 
-            debug_renderer.render(&mut renderer, &mut factory, &window_output, camera_projection);
-
-            device.submit(renderer.as_buffer());
-
-            renderer.reset();
-
-            device.after_frame();
-            factory.cleanup();
-
+            debug_renderer.render_canvas(canvas, camera_projection);
         });
     }
 }
