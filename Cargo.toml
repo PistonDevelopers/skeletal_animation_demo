@@ -47,3 +47,6 @@ git = "https://github.com/PistonDevelopers/piston_collada"
 
 [dependencies.dev_menu]
 git = "https://github.com/PistonDevelopers/dev_menu"
+
+[dependencies.piston_window]
+git = "https://github.com/pistondevelopers/piston_window"
