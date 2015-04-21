@@ -68,7 +68,6 @@ fn main() {
 
     let mut debug_renderer = DebugRenderer::from_canvas(
         &mut piston_window.canvas.borrow_mut(),
-        [win_width as u32, win_height as u32],
         64,
         None,
         None,
@@ -178,8 +177,6 @@ fn main() {
         menu.event(&e, &mut settings);
 
         e.resize(|width, height| {
-            debug_renderer.resize(width, height);
-
             // Update projection matrix
             projection = CameraPerspective {
                 fov: 90.0f32,
