@@ -171,6 +171,12 @@ fn main() {
         ));
     }
 
+    // set head look controller params to nice initial values..
+    settings.params.insert("head-look-level".to_string(), 1.0);
+    settings.params.insert("head-look-sideways-level".to_string(), 1.0);
+    settings.params.insert("head-down-to-up".to_string(), 0.5);
+    settings.params.insert("head-left-to-right".to_string(), 0.5);
+
     for e in piston_window {
 
         orbit_zoom_camera.event(&e);
