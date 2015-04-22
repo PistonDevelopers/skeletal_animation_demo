@@ -94,9 +94,9 @@ fn main() {
     let skeleton = Rc::new(skeleton);
 
     let mut asset_manager = AssetManager::new();
-    asset_manager.load_animations("assets/clips.json");
+    asset_manager.load_assets("assets/assets.json");
 
-    let controller_def = AssetManager::load_def_from_path("assets/human_controller.json").unwrap();
+    let controller_def = asset_manager.controller_defs["human-controller"].clone();
     let mut controller = AnimationController::new(controller_def, skeleton.clone(), &asset_manager.animation_clips);
 
     let mut skinned_renderer = SkinnedRenderer::from_collada(&mut piston_window.canvas.borrow_mut().factory, collada_document, texture_paths).unwrap();

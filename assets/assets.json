@@ -1,0 +1,189 @@
+{
+
+    "animation_clips": [{
+	      "name": "walk-forward",
+	      "source": "assets/walk.dae",
+	      "looping": true,
+	      "duration": 1.0
+    }, {
+	      "name": "run-forward",
+	      "source": "assets/run.dae",
+	      "looping": true,
+	      "duration": 1.0
+    }, {
+	      "name": "walk-left",
+	      "source": "assets/walk_left.dae",
+	      "looping": true,
+	      "rotate_z": 180,
+	      "duration": 1.0
+    }, {
+	      "name": "walk-right",
+	      "source": "assets/walk_right.dae",
+	      "looping": true,
+	      "rotate_z": 180,
+	      "duration": 1.0
+    }, {
+	      "name": "stand-idle",
+	      "source": "assets/standing_idle.dae",
+	      "looping": true,
+	      "rotate_z": 90
+    }, {
+	      "name": "reference-pose",
+	      "source": "assets/t_pose.dae",
+	      "looping": true
+    }, {
+	      "name": "head-look-right",
+	      "source": "assets/head_look_right.dae",
+	      "looping": true
+    }, {
+	      "name": "head-look-left",
+	      "source": "assets/head_look_left.dae",
+	      "looping": true
+    }, {
+	      "name": "head-look-down",
+	      "source": "assets/head_look_down.dae",
+	      "looping": true
+    }, {
+	      "name": "head-look-up",
+	      "source": "assets/head_look_up.dae",
+	      "looping": true
+    }],
+
+    "difference_clips": [{
+        "name": "head-look-left-additive",
+	      "source_clip": "head-look-left",
+	      "reference_clip": "reference-pose"
+    }, {
+        "name": "head-look-right-additive",
+	      "source_clip": "head-look-right",
+	      "reference_clip": "reference-pose"
+    }, {
+        "name": "head-look-down-additive",
+	      "source_clip": "head-look-down",
+	      "reference_clip": "reference-pose"
+    }, {
+        "name": "head-look-up-additive",
+	      "source_clip": "head-look-up",
+	      "reference_clip": "reference-pose"
+    }],
+
+    "animation_controllers": [{
+
+        "name": "human-controller",
+
+	      "parameters": [
+		        "forward-speed",
+		        "forward-to-strafe",
+		        "walk-to-run",
+		        "head-left-to-right",
+		        "head-down-to-up",
+		        "head-look-level",
+		        "head-look-sideways-level"
+	      ],
+
+	      "states": [ {
+		        "name": "walking-forward",
+
+            "blend_tree": {
+                "type": "AdditiveNode",
+                "param": "head-look-level",
+			          "inputs": [ {
+				            "type": "LerpNode",
+				            "param": "walk-to-run",
+				            "inputs": [{
+					              "type": "ClipNode",
+					              "clip_source": "walk-forward"
+				            }, {
+					              "type": "ClipNode",
+					              "clip_source": "run-forward"
+				            }]
+			          }, {
+
+			              "type": "AdditiveNode",
+                    "param": "head-look-sideways-level",
+                    "inputs": [{
+				                "type": "LerpNode",
+				                "param": "head-down-to-up",
+				                "inputs": [{
+					                  "type": "ClipNode",
+					                  "clip_source": "head-look-down-additive"
+				                }, {
+					                  "type": "ClipNode",
+					                  "clip_source": "head-look-up-additive"
+				                }]
+                    }, {
+				                "type": "LerpNode",
+				                "param": "head-left-to-right",
+				                "inputs": [{
+					                  "type": "ClipNode",
+					                  "clip_source": "head-look-left-additive"
+				                }, {
+					                  "type": "ClipNode",
+					                  "clip_source": "head-look-right-additive"
+				                }]
+                    }]
+			          }]
+            },
+
+		        "transitions": [ {
+			          "target_state": "stand-idle",
+			          "type": "crossover",
+			          "duration": 0.5,
+			          "condition": {
+				            "parameter": "forward-speed",
+				            "operator": "<",
+				            "value": 0.1
+			          }
+		        }]
+
+	      }, {
+		        "name": "stand-idle",
+		        "blend_tree": {
+                "type": "AdditiveNode",
+                "param": "head-look-level",
+                "inputs": [{
+			              "type": "ClipNode",
+			              "clip_source": "stand-idle"
+
+                }, {
+			              "type": "AdditiveNode",
+                    "param": "head-look-sideways-level",
+                    "inputs": [{
+				                "type": "LerpNode",
+				                "param": "head-down-to-up",
+				                "inputs": [{
+					                  "type": "ClipNode",
+					                  "clip_source": "head-look-down-additive"
+				                }, {
+					                  "type": "ClipNode",
+					                  "clip_source": "head-look-up-additive"
+				                }]
+                    }, {
+				                "type": "LerpNode",
+				                "param": "head-left-to-right",
+				                "inputs": [{
+					                  "type": "ClipNode",
+					                  "clip_source": "head-look-left-additive"
+				                }, {
+					                  "type": "ClipNode",
+					                  "clip_source": "head-look-right-additive"
+				                }]
+                    }]
+                }]
+		        },
+		        "transitions": [ {
+			          "target_state": "walking-forward",
+			          "type": "crossover",
+			          "duration": 0.5,
+			          "condition": {
+				            "parameter": "forward-speed",
+				            "operator": ">",
+				            "value": 0.1
+			          }
+		        } ]
+	      } ],
+
+	      "initial_state": "stand-idle"
+    }]
+
+}
