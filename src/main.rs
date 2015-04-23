@@ -19,7 +19,6 @@ use std::rc::Rc;
 use std::cell::RefCell;
 use std::collections::HashMap;
 
-
 use gfx_debug_draw::DebugRenderer;
 
 use piston::window::{
@@ -40,6 +39,8 @@ use camera_controllers::{
 };
 
 use skeletal_animation::*;
+use skeletal_animation::math::DualQuaternion;
+
 use collada::document::ColladaDocument;
 
 pub struct Settings {
@@ -93,7 +94,9 @@ fn main() {
 
     let skeleton = Rc::new(skeleton);
 
-    let mut asset_manager = AssetManager::new();
+    //let mut asset_manager = AssetManager::<QVTransform>::new();
+    let mut asset_manager = AssetManager::<DualQuaternion<f32>>::new();
+
     asset_manager.load_assets("assets/assets.json");
 
     let controller_def = asset_manager.controller_defs["human-controller"].clone();

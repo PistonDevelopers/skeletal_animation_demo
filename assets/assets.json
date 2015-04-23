@@ -3,25 +3,21 @@
     "animation_clips": [{
 	      "name": "walk-forward",
 	      "source": "assets/walk.dae",
-	      "looping": true,
-	      "duration": 1.0
+	      "looping": true
     }, {
 	      "name": "run-forward",
 	      "source": "assets/run.dae",
-	      "looping": true,
-	      "duration": 1.0
+	      "looping": true
     }, {
 	      "name": "walk-left",
 	      "source": "assets/walk_left.dae",
 	      "looping": true,
-	      "rotate_z": 180,
-	      "duration": 1.0
+	      "rotate_z": 180
     }, {
 	      "name": "walk-right",
 	      "source": "assets/walk_right.dae",
 	      "looping": true,
-	      "rotate_z": 180,
-	      "duration": 1.0
+	      "rotate_z": 180
     }, {
 	      "name": "stand-idle",
 	      "source": "assets/standing_idle.dae",
