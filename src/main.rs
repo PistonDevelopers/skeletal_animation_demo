@@ -14,7 +14,6 @@ extern crate shader_version;
 extern crate skeletal_animation;
 extern crate vecmath;
 
-use std::path::Path;
 use std::rc::Rc;
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -27,7 +26,7 @@ use piston::window::{
 
 use piston::event::*;
 
-use vecmath::{Matrix4, mat4_id};
+use vecmath::{mat4_id};
 
 use sdl2_window::Sdl2Window;
 
@@ -38,19 +37,8 @@ use camera_controllers::{
     model_view_projection
 };
 
-use skeletal_animation::*;
-use skeletal_animation::math::DualQuaternion;
-
-use collada::document::ColladaDocument;
-
-pub struct Settings {
-    pub draw_skeleton: bool,
-    pub draw_labels: bool,
-    pub draw_mesh: bool,
-    pub playback_speed: f32,
-
-    pub params: HashMap<String, f32>,
-}
+mod demo;
+use demo::Settings;
 
 fn main() {
 
@@ -74,36 +62,6 @@ fn main() {
         None,
     ).ok().unwrap();
 
-    // TODO - these are (usually) available in the COLLADA file, associated with a <mesh> element in a somewhat convoluted way
-    let texture_paths = vec![
-        "assets/young_lightskinned_male_diffuse.png",
-        "assets/suit01lres_diffuse.png",
-        "assets/male02_diffuse_black.png",
-        "assets/brown_eye.png",
-        "assets/eyebrow009.png",
-        "assets/eyelashes01.png",
-    ];
-
-    let collada_document = ColladaDocument::from_path(&Path::new("assets/suit_guy.dae")).unwrap();
-
-    // TODO better.. we keep reloading the same document over and over for different things...
-    let skeleton = {
-        let skeleton_set = collada_document.get_skeletons().unwrap();
-        Skeleton::from_collada(&skeleton_set[0])
-    };
-
-    let skeleton = Rc::new(skeleton);
-
-    //let mut asset_manager = AssetManager::<QVTransform>::new();
-    let mut asset_manager = AssetManager::<DualQuaternion<f32>>::new();
-
-    asset_manager.load_assets("assets/assets.json");
-
-    let controller_def = asset_manager.controller_defs["human-controller"].clone();
-    let mut controller = AnimationController::new(controller_def, skeleton.clone(), &asset_manager.animation_clips);
-
-    let mut skinned_renderer = SkinnedRenderer::from_collada(&mut piston_window.canvas.borrow_mut().factory, collada_document, texture_paths).unwrap();
-
     let model = mat4_id();
     let mut projection = CameraPerspective {
         fov: 90.0f32,
@@ -121,6 +79,7 @@ fn main() {
 
     let mut settings = Settings {
 
+        use_dlb: true,
         draw_skeleton: true,
         draw_labels: false,
         draw_mesh: true,
@@ -130,6 +89,13 @@ fn main() {
     };
 
     let mut menu = dev_menu::Menu::<Settings>::new();
+
+    menu.add_item(dev_menu::MenuItem::action_item(
+        "Toggle DLB/LBS Skinning",
+        Box::new( |ref mut settings| {
+            settings.use_dlb = !settings.use_dlb;
+        })
+    ));
 
     menu.add_item(dev_menu::MenuItem::action_item(
         "Toggle Skeleton",
@@ -154,7 +120,10 @@ fn main() {
         Box::new( |ref mut settings, value| { settings.playback_speed = value }),
     ));
 
-    for (param, &value) in controller.get_parameters().iter() {
+    let mut lbs_demo = demo::dlb_demo(&mut piston_window.canvas.borrow_mut());
+    let mut dlb_demo = demo::lbs_demo(&mut piston_window.canvas.borrow_mut());
+
+    for (param, &value) in dlb_demo.controller.get_parameters().iter() {
         settings.params.insert(param.clone(), value);
 
         // Apparently need to make our own string copies to move into each closure..
@@ -196,14 +165,8 @@ fn main() {
         });
 
         e.update(|args| {
-
-            controller.set_playback_speed(settings.playback_speed as f64);
-
-            for (param, &value) in settings.params.iter() {
-                controller.set_param_value(param, value);
-            }
-
-            controller.update(args.dt);
+            dlb_demo.update(&settings, args.dt);
+            lbs_demo.update(&settings, args.dt);
         });
 
         e.draw_3d(|canvas| {
@@ -251,17 +214,9 @@ fn main() {
                 [0.0, 0.0, 1.0, 1.0],
             );
 
-            let mut global_poses: [Matrix4<f32>; 64] = [ mat4_id(); 64 ];
+            dlb_demo.render(&settings, &mut debug_renderer, canvas, camera_view, camera_projection, args.ext_dt, settings.use_dlb);
 
-            controller.get_output_pose(args.ext_dt, &mut global_poses[0 .. skeleton.joints.len()]);
-
-            if settings.draw_mesh {
-                skinned_renderer.render_canvas(canvas, camera_view, camera_projection, &global_poses);
-            }
-
-            if settings.draw_skeleton {
-                skeleton.draw(&global_poses, &mut debug_renderer, settings.draw_labels);
-            }
+            lbs_demo.render(&settings, &mut debug_renderer, canvas, camera_view, camera_projection, args.ext_dt, !settings.use_dlb);
 
             menu.draw(&settings, &mut debug_renderer);
 
