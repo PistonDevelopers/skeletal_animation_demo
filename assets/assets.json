@@ -43,6 +43,10 @@
 	      "name": "head-look-up",
 	      "source": "assets/head_look_up.dae",
 	      "looping": true
+    }, {
+	      "name": "arm-twist",
+	      "source": "assets/arm_twist.dae",
+	      "looping": true
     }],
 
     "difference_clips": [{
@@ -61,6 +65,10 @@
         "name": "head-look-up-additive",
 	      "source_clip": "head-look-up",
 	      "reference_clip": "reference-pose"
+    }, {
+        "name": "arm-twist-additive",
+	      "source_clip": "arm-twist",
+	      "reference_clip": "reference-pose"
     }],
 
     "animation_controllers": [{
@@ -68,6 +76,7 @@
         "name": "human-controller",
 
 	      "parameters": [
+		        "arm-twist",
 		        "forward-speed",
 		        "forward-to-strafe",
 		        "walk-to-run",
@@ -99,16 +108,6 @@
                     "param": "head-look-sideways-level",
                     "inputs": [{
 				                "type": "LerpNode",
-				                "param": "head-down-to-up",
-				                "inputs": [{
-					                  "type": "ClipNode",
-					                  "clip_source": "head-look-down-additive"
-				                }, {
-					                  "type": "ClipNode",
-					                  "clip_source": "head-look-up-additive"
-				                }]
-                    }, {
-				                "type": "LerpNode",
 				                "param": "head-left-to-right",
 				                "inputs": [{
 					                  "type": "ClipNode",
@@ -117,13 +116,22 @@
 					                  "type": "ClipNode",
 					                  "clip_source": "head-look-right-additive"
 				                }]
+                    }, {
+				                "type": "LerpNode",
+				                "param": "head-down-to-up",
+				                "inputs": [{
+					                  "type": "ClipNode",
+					                  "clip_source": "head-look-down-additive"
+				                }, {
+					                  "type": "ClipNode",
+					                  "clip_source": "head-look-up-additive"
+				                }]
                     }]
 			          }]
             },
 
 		        "transitions": [ {
 			          "target_state": "stand-idle",
-			          "type": "crossover",
 			          "duration": 0.5,
 			          "condition": {
 				            "parameter": "forward-speed",
@@ -146,16 +154,6 @@
                     "param": "head-look-sideways-level",
                     "inputs": [{
 				                "type": "LerpNode",
-				                "param": "head-down-to-up",
-				                "inputs": [{
-					                  "type": "ClipNode",
-					                  "clip_source": "head-look-down-additive"
-				                }, {
-					                  "type": "ClipNode",
-					                  "clip_source": "head-look-up-additive"
-				                }]
-                    }, {
-				                "type": "LerpNode",
 				                "param": "head-left-to-right",
 				                "inputs": [{
 					                  "type": "ClipNode",
@@ -164,19 +162,59 @@
 					                  "type": "ClipNode",
 					                  "clip_source": "head-look-right-additive"
 				                }]
+                    }, {
+				                "type": "LerpNode",
+				                "param": "head-down-to-up",
+				                "inputs": [{
+					                  "type": "ClipNode",
+					                  "clip_source": "head-look-down-additive"
+				                }, {
+					                  "type": "ClipNode",
+					                  "clip_source": "head-look-up-additive"
+				                }]
                     }]
                 }]
 		        },
-		        "transitions": [ {
+		        "transitions": [{
 			          "target_state": "walking-forward",
-			          "type": "crossover",
 			          "duration": 0.5,
 			          "condition": {
 				            "parameter": "forward-speed",
 				            "operator": ">",
 				            "value": 0.1
 			          }
-		        } ]
+		        }, {
+			          "target_state": "arm-twist-demo",
+			          "duration": 0.5,
+			          "condition": {
+				            "parameter": "arm-twist",
+				            "operator": ">",
+				            "value": 0.01
+			          }
+            }]
+	      }, {
+		        "name": "arm-twist-demo",
+		        "blend_tree": {
+                "type": "AdditiveNode",
+                "param": "arm-twist",
+                "inputs": [{
+			              "type": "ClipNode",
+			              "clip_source": "reference-pose"
+
+                }, {
+					          "type": "ClipNode",
+					          "clip_source": "arm-twist-additive"
+                }]
+		        },
+		        "transitions": [{
+			          "target_state": "stand-idle",
+			          "duration": 0.5,
+			          "condition": {
+				            "parameter": "arm-twist",
+				            "operator": "<",
+				            "value": 0.01
+			          }
+		        }]
 	      } ],
 
 	      "initial_state": "stand-idle"
