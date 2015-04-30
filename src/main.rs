@@ -120,8 +120,8 @@ fn main() {
         Box::new( |ref mut settings, value| { settings.playback_speed = value }),
     ));
 
-    let mut lbs_demo = demo::dlb_demo(&mut piston_window.canvas.borrow_mut());
-    let mut dlb_demo = demo::lbs_demo(&mut piston_window.canvas.borrow_mut());
+    let mut lbs_demo = demo::lbs_demo(&mut piston_window.canvas.borrow_mut());
+    let mut dlb_demo = demo::dlb_demo(&mut piston_window.canvas.borrow_mut());
 
     for (param, &value) in dlb_demo.controller.get_parameters().iter() {
         settings.params.insert(param.clone(), value);
