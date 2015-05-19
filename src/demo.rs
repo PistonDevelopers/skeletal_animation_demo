@@ -12,24 +12,17 @@ use vecmath::Matrix4;
 use skeletal_animation::math::DualQuaternion;
 use skeletal_animation::*;
 
-pub fn lbs_demo<R,C,F,O,D>(canvas: &mut gfx::Canvas<O,D,F>) -> Demo<R, QVTransform, Matrix4<f32>>
+pub fn lbs_demo<R, F>(factory:F) -> Demo<R, F, QVTransform, Matrix4<f32>>
     where R: gfx::Resources,
-          C: gfx::CommandBuffer<R>,
-          F: gfx::Factory<R>,
-          O: gfx::render::target::Output<R>,
-          D: Device<Resources = R, CommandBuffer = C> {
-    Demo::new(canvas)
+          F: gfx::Factory<R> {
+    Demo::new(factory)
 }
 
-pub fn dlb_demo<R,C,F,O,D>(canvas: &mut gfx::Canvas<O,D,F>) -> Demo<R, DualQuaternion<f32>, DualQuaternion<f32>>
+pub fn dlb_demo<R, F>(factory:F) -> Demo<R, F, DualQuaternion<f32>, DualQuaternion<f32>>
     where R: gfx::Resources,
-          C: gfx::CommandBuffer<R>,
-          F: gfx::Factory<R>,
-          O: gfx::render::target::Output<R>,
-          D: Device<Resources = R, CommandBuffer = C> {
-    Demo::new(canvas)
+          F: gfx::Factory<R> {
+    Demo::new(factory)
 }
-
 pub struct Settings {
     pub use_dlb: bool,
     pub draw_skeleton: bool,
@@ -40,23 +33,16 @@ pub struct Settings {
     pub params: HashMap<String, f32>,
 }
 
-pub struct Demo<R: gfx::Resources, TAnim: Transform, TSkinning: Transform + FromTransform<TAnim> + HasShaderSources<'static>> {
+pub struct Demo<R: gfx::Resources, F: gfx::Factory<R>, TAnim: Transform, TSkinning: Transform + FromTransform<TAnim> + HasShaderSources<'static>> {
     pub asset_manager: AssetManager<TAnim>,
     pub controller: AnimationController<TAnim>,
-    pub skinned_renderer: SkinnedRenderer<R,TSkinning>,
+    pub skinned_renderer: SkinnedRenderer<R, F, TSkinning>,
     pub skeleton: Rc<Skeleton>,
 }
 
-impl<R: gfx::Resources, TAnim: Transform, TSkinning: Transform + FromTransform<TAnim> + HasShaderSources<'static>> Demo<R, TAnim, TSkinning> {
+impl<R: gfx::Resources, F: gfx::Factory<R>, TAnim: Transform, TSkinning: Transform + FromTransform<TAnim> + HasShaderSources<'static>> Demo<R, F, TAnim, TSkinning> {
 
-    pub fn new<
-        C: gfx::CommandBuffer<R>,
-        F: gfx::Factory<R>,
-        O: gfx::render::target::Output<R>,
-        D: Device<Resources = R, CommandBuffer = C>,
-    > (
-        canvas: &mut gfx::Canvas<O, D, F>
-    ) -> Demo<R, TAnim, TSkinning> {
+    pub fn new(factory: F) -> Demo<R, F, TAnim, TSkinning> {
 
         let collada_document = ColladaDocument::from_path(&Path::new("assets/suit_guy.dae")).unwrap();
 
@@ -85,7 +71,7 @@ impl<R: gfx::Resources, TAnim: Transform, TSkinning: Transform + FromTransform<T
 
         let controller = AnimationController::new(controller_def, skeleton.clone(), &asset_manager.animation_clips);
 
-        let skinned_renderer = SkinnedRenderer::<R, TSkinning>::from_collada_with_canvas(canvas, collada_document, texture_paths).unwrap();
+        let skinned_renderer = SkinnedRenderer::<R, F, TSkinning>::from_collada(factory, collada_document, texture_paths).unwrap();
 
         Demo {
             asset_manager: asset_manager,
@@ -105,16 +91,11 @@ impl<R: gfx::Resources, TAnim: Transform, TSkinning: Transform + FromTransform<T
         self.controller.update(dt);
     }
 
-    pub fn render<
-        C: gfx::CommandBuffer<R>,
-        F: gfx::Factory<R>,
-        O: gfx::render::target::Output<R>,
-        D: Device<Resources = R, CommandBuffer = C>,
-    > (
+    pub fn render<S: gfx::Stream<R>> (
         &mut self,
         settings: &Settings,
-        debug_renderer: &mut gfx_debug_draw::DebugRenderer<R>,
-        canvas: &mut gfx::Canvas<O, D, F>,
+        debug_renderer: &mut gfx_debug_draw::DebugRenderer<R, F>,
+        stream: &mut S,
         camera_view: [[f32; 4]; 4],
         camera_projection: [[f32; 4]; 4],
         ext_dt: f64,
@@ -125,7 +106,7 @@ impl<R: gfx::Resources, TAnim: Transform, TSkinning: Transform + FromTransform<T
         self.controller.get_output_pose(ext_dt, &mut global_poses[0 .. self.skeleton.joints.len()]);
         if should_draw {
             if settings.draw_mesh {
-                self.skinned_renderer.render_canvas(canvas, camera_view, camera_projection, &global_poses);
+                self.skinned_renderer.render(stream, camera_view, camera_projection, &global_poses);
             }
 
             if settings.draw_skeleton {

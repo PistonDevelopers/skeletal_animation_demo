@@ -55,12 +55,8 @@ fn main() {
 
     let piston_window = piston_window::PistonWindow::new(window, piston_window::empty_app());
 
-    let mut debug_renderer = DebugRenderer::from_canvas(
-        &mut piston_window.canvas.borrow_mut(),
-        64,
-        None,
-        None,
-    ).ok().unwrap();
+    let factory = piston_window.device.borrow_mut().spawn_factory();
+    let mut debug_renderer = DebugRenderer::new(factory, 64).ok().unwrap();
 
     let model = mat4_id();
     let mut projection = CameraPerspective {
@@ -120,8 +116,15 @@ fn main() {
         Box::new( |ref mut settings, value| { settings.playback_speed = value }),
     ));
 
-    let mut lbs_demo = demo::lbs_demo(&mut piston_window.canvas.borrow_mut());
-    let mut dlb_demo = demo::dlb_demo(&mut piston_window.canvas.borrow_mut());
+    let mut lbs_demo = {
+        let factory = piston_window.device.borrow_mut().spawn_factory();
+        demo::lbs_demo(factory)
+    };
+
+    let mut dlb_demo = {
+        let factory = piston_window.device.borrow_mut().spawn_factory();
+        demo::dlb_demo(factory)
+    };
 
     for (param, &value) in dlb_demo.controller.get_parameters().iter() {
         settings.params.insert(param.clone(), value);
@@ -169,19 +172,17 @@ fn main() {
             lbs_demo.update(&settings, args.dt);
         });
 
-        e.draw_3d(|canvas| {
+        e.draw_3d(|stream| {
+
+            use gfx::traits::Stream;
 
             let args = e.render_args().unwrap();
 
-            canvas.renderer.clear(
-                gfx::ClearData {
-                    color: [0.3, 0.3, 0.3, 1.0],
-                    depth: 1.0,
-                    stencil: 0,
-                },
-                gfx::COLOR | gfx::DEPTH,
-                &canvas.output
-            );
+            stream.clear(gfx::ClearData {
+                color: [0.3, 0.3, 0.3, 1.0],
+                depth: 1.0,
+                stencil: 0,
+            });
 
             let camera_view = orbit_zoom_camera.camera(args.ext_dt).orthogonal();
 
@@ -214,13 +215,15 @@ fn main() {
                 [0.0, 0.0, 1.0, 1.0],
             );
 
-            dlb_demo.render(&settings, &mut debug_renderer, canvas, camera_view, camera_projection, args.ext_dt, settings.use_dlb);
+            dlb_demo.render(&settings, &mut debug_renderer, stream, camera_view, camera_projection, args.ext_dt, settings.use_dlb);
 
-            lbs_demo.render(&settings, &mut debug_renderer, canvas, camera_view, camera_projection, args.ext_dt, !settings.use_dlb);
+            lbs_demo.render(&settings, &mut debug_renderer, stream, camera_view, camera_projection, args.ext_dt, !settings.use_dlb);
 
             menu.draw(&settings, &mut debug_renderer);
 
-            debug_renderer.render_canvas(canvas, camera_projection);
+            if let Err(e) = debug_renderer.render(stream, camera_projection) {
+                println!("{:?}", e);
+            }
         });
     }
 }
