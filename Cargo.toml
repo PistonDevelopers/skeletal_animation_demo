@@ -50,3 +50,6 @@ git = "https://github.com/PistonDevelopers/dev_menu"
 
 [dependencies.piston_window]
 git = "https://github.com/pistondevelopers/piston_window"
+
+[dependencies.gfx_text]
+git = "https://github.com/PistonDevelopers/gfx_text"

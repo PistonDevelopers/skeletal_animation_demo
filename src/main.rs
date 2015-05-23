@@ -3,6 +3,7 @@ extern crate collada;
 extern crate dev_menu;
 extern crate env_logger;
 extern crate gfx;
+extern crate gfx_text;
 extern crate gfx_debug_draw;
 extern crate gfx_device_gl;
 extern crate gfx_gl as gl;
@@ -55,8 +56,16 @@ fn main() {
 
     let piston_window = piston_window::PistonWindow::new(window, piston_window::empty_app());
 
-    let factory = piston_window.device.borrow_mut().spawn_factory();
-    let mut debug_renderer = DebugRenderer::new(factory, 64).ok().unwrap();
+    let mut debug_renderer = {
+        let factory = piston_window.device.borrow_mut().spawn_factory();
+
+        let text_renderer = {
+            let factory = piston_window.device.borrow_mut().spawn_factory();
+            gfx_text::new(factory).unwrap()
+        };
+
+        DebugRenderer::new(factory, text_renderer, 64).ok().unwrap()
+    };
 
     let model = mat4_id();
     let mut projection = CameraPerspective {
@@ -133,10 +142,22 @@ fn main() {
         let param_copy_1 = param.clone();
         let param_copy_2 = param.clone();
 
+        let range = if param == "target-x" || param == "target-y" || param == "target-z" {
+            [-100.0, 100.0]
+        } else {
+            [0.0, 1.0]
+        };
+
+        let rate = if param == "target-x" || param == "target-y" || param == "target-z" {
+            0.1
+        } else {
+            0.01
+        };
+
         menu.add_item(dev_menu::MenuItem::slider_item(
             &format!("Param[{}] = ", param)[..],
-            [0.0, 1.0],
-            0.01,
+            range,
+            rate,
             Box::new( move |ref settings| {
                 settings.params[&param_copy_1[..]]
             }),
@@ -191,6 +212,15 @@ fn main() {
                 camera_view,
                 projection
             );
+
+            // Draw IK target...
+            let target = [settings.params["target-x"],
+                          settings.params["target-y"],
+                          settings.params["target-z"]];
+
+            debug_renderer.draw_line(vecmath::vec3_sub(target, [1.0, 0.0, 0.0]), vecmath::vec3_add(target, [1.0, 0.0, 0.0]), [1.0, 1.0, 1.0, 1.0]);
+            debug_renderer.draw_line(vecmath::vec3_sub(target, [0.0, 1.0, 0.0]), vecmath::vec3_add(target, [0.0, 1.0, 0.0]), [1.0, 1.0, 1.0, 1.0]);
+            debug_renderer.draw_line(vecmath::vec3_sub(target, [0.0, 0.0, 1.0]), vecmath::vec3_add(target, [0.0, 0.0, 1.0]), [1.0, 1.0, 1.0, 1.0]);
 
             // Draw axes
             debug_renderer.draw_line([0.0, 0.0, 0.0], [5.0, 0.0, 0.0], [1.0, 0.0, 0.0, 1.0]);
