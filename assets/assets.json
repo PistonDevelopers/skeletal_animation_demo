@@ -87,7 +87,10 @@
             "ik-blend-level",
             "target-x",
             "target-y",
-            "target-z"
+            "target-z",
+            "bend-dir-x",
+            "bend-dir-y",
+            "bend-dir-z"
 	      ],
 
 	      "states": [ {
@@ -100,6 +103,9 @@
                 "target_x_param": "target-x",
                 "target_y_param": "target-y",
                 "target_z_param": "target-z",
+                "bend_x_param": "bend-dir-x",
+                "bend_y_param": "bend-dir-y",
+                "bend_z_param": "bend-dir-z",
                 "input": {
                     "type": "AdditiveNode",
                     "param": "head-look-level",
@@ -161,6 +167,9 @@
                 "target_x_param": "target-x",
                 "target_y_param": "target-y",
                 "target_z_param": "target-z",
+                "bend_x_param": "bend-dir-x",
+                "bend_y_param": "bend-dir-y",
+                "bend_z_param": "bend-dir-z",
                 "input": {
                     "type": "AdditiveNode",
                     "param": "head-look-level",
