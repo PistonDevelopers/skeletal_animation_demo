@@ -11,45 +11,24 @@ path = "src/main.rs"
 [dependencies]
 gfx_gl = "*"
 env_logger = "*"
-
-[dependencies.gfx]
-git = "https://github.com/gfx-rs/gfx-rs"
-
-[dependencies.gfx_device_gl]
-git = "https://github.com/gfx-rs/gfx_device_gl"
-
-[dependencies.gfx_debug_draw]
-git = "https://github.com/PistonDevelopers/gfx-debug-draw"
-
-[dependencies.shader_version]
-git = "https://github.com/PistonDevelopers/shader_version"
-
-[dependencies.vecmath]
-git = "https://github.com/PistonDevelopers/vecmath"
-
-[dependencies.piston]
-git = "https://github.com/PistonDevelopers/piston"
-
-[dependencies.camera_controllers]
-git = "https://github.com/pistondevelopers/camera_controllers"
-
-[dependencies.sdl2]
-git = "https://github.com/AngryLawyer/rust-sdl2"
-
-[dependencies.pistoncore-sdl2_window]
-git = "https://github.com/PistonDevelopers/sdl2_window"
+collada = "*"
+vecmath = "*"
+quaternion = "*"
+dual_quaternion = "*"
+gfx = "0.6.*"
+gfx_device_gl = "0.4.*"
+piston-gfx_texture = "*"
+interpolation = "*"
+piston-float = "*"
+shader_version = "0.0.*"
+sdl2 = "0.4.*"
+pistoncore-sdl2_window = "0.0.*"
+camera_controllers = "0.0.*"
+piston = "0.1.*"
+piston_window = "0.0.*"
+gfx_text = "0.2.*"
+gfx_debug_draw = "0.3.*"
+dev_menu = "0.1.*"
 
 [dependencies.skeletal_animation]
 git = "https://github.com/PistonDevelopers/skeletal_animation"
-
-[dependencies.collada]
-git = "https://github.com/PistonDevelopers/piston_collada"
-
-[dependencies.dev_menu]
-git = "https://github.com/PistonDevelopers/dev_menu"
-
-[dependencies.piston_window]
-git = "https://github.com/pistondevelopers/piston_window"
-
-[dependencies.gfx_text]
-git = "https://github.com/PistonDevelopers/gfx_text"
