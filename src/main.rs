@@ -15,9 +15,8 @@ extern crate shader_version;
 extern crate skeletal_animation;
 extern crate vecmath;
 
-use std::rc::Rc;
-use std::cell::RefCell;
 use std::collections::HashMap;
+use piston_window::PistonWindow;
 
 use gfx_debug_draw::DebugRenderer;
 
@@ -25,7 +24,8 @@ use piston::window::{
     WindowSettings,
 };
 
-use piston::event::*;
+use piston::input::*;
+use piston::event_loop::*;
 
 use vecmath::{mat4_id};
 
@@ -46,15 +46,12 @@ fn main() {
     env_logger::init().unwrap();
 
     let (win_width, win_height) = (640, 480);
-    let window = Rc::new(RefCell::new(Sdl2Window::new(
-        shader_version::OpenGL::_3_2,
-        WindowSettings::new(
-            "Skeletal Animation Demo".to_string(),
-            piston::window::Size { width: 640, height: 480 }
-        ).exit_on_esc(true)
-    )));
-
-    let piston_window = piston_window::PistonWindow::new(window, piston_window::empty_app());
+    let piston_window: PistonWindow<(), Sdl2Window> =
+        WindowSettings::new("Skeletal Animation Demo", [win_width, win_height])
+            .exit_on_esc(true)
+            .opengl(shader_version::OpenGL::V3_2)
+            .build()
+            .unwrap();
 
     let mut debug_renderer = {
         let text_renderer = {
