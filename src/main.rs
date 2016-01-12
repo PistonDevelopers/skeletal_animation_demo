@@ -25,8 +25,6 @@ use piston::window::{
 };
 
 use piston::input::*;
-use piston::event_loop::*;
-
 use vecmath::{mat4_id};
 
 use sdl2_window::Sdl2Window;
