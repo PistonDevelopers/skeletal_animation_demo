@@ -44,7 +44,7 @@ fn main() {
     env_logger::init().unwrap();
 
     let (win_width, win_height) = (640, 480);
-    let piston_window: PistonWindow<(), Sdl2Window> =
+    let mut window: PistonWindow<Sdl2Window> =
         WindowSettings::new("Skeletal Animation Demo", [win_width, win_height])
             .exit_on_esc(true)
             .opengl(shader_version::OpenGL::V3_2)
@@ -53,9 +53,9 @@ fn main() {
 
     let mut debug_renderer = {
         let text_renderer = {
-            gfx_text::new(piston_window.factory.borrow().clone()).unwrap()
+            gfx_text::new(window.factory.clone()).unwrap()
         };
-        DebugRenderer::new(piston_window.factory.borrow().clone(), text_renderer, 64).ok().unwrap()
+        DebugRenderer::new(window.factory.clone(), text_renderer, 64).ok().unwrap()
     };
 
     let model = mat4_id();
@@ -117,11 +117,11 @@ fn main() {
     ));
 
     let mut lbs_demo = {
-        demo::lbs_demo(piston_window.factory.borrow().clone())
+        demo::lbs_demo(&mut window.factory)
     };
 
     let mut dlb_demo = {
-        demo::dlb_demo(piston_window.factory.borrow().clone())
+        demo::dlb_demo(&mut window.factory)
     };
 
     for (param, &value) in dlb_demo.controller.get_parameters().iter() {
@@ -162,7 +162,7 @@ fn main() {
     settings.params.insert("head-down-to-up".to_string(), 0.5);
     settings.params.insert("head-left-to-right".to_string(), 0.5);
 
-    for e in piston_window {
+    while let Some(e) = window.next() {
 
         orbit_zoom_camera.event(&e);
         menu.event(&e, &mut settings);
@@ -182,17 +182,11 @@ fn main() {
             lbs_demo.update(&settings, args.dt);
         });
 
-        e.draw_3d(|stream| {
-
-            use gfx::traits::Stream;
-
+        window.draw_3d(&e, |window| {
             let args = e.render_args().unwrap();
 
-            stream.clear(gfx::ClearData {
-                color: [0.3, 0.3, 0.3, 1.0],
-                depth: 1.0,
-                stencil: 0,
-            });
+            window.encoder.clear(&window.output_color, [0.3, 0.3, 0.3, 1.0]);
+            window.encoder.clear_depth(&window.output_stencil, 1.0);
 
             let camera_view = orbit_zoom_camera.camera(args.ext_dt).orthogonal();
 
@@ -234,13 +228,17 @@ fn main() {
                 [0.0, 0.0, 1.0, 1.0],
             );
 
-            dlb_demo.render(&settings, &mut debug_renderer, stream, camera_view, camera_projection, args.ext_dt, settings.use_dlb);
+            dlb_demo.render(&settings, &mut debug_renderer,
+                &mut window.encoder, &window.output_color, &window.output_stencil,
+                camera_view, camera_projection, args.ext_dt, settings.use_dlb);
 
-            lbs_demo.render(&settings, &mut debug_renderer, stream, camera_view, camera_projection, args.ext_dt, !settings.use_dlb);
+            lbs_demo.render(&settings, &mut debug_renderer,
+                &mut window.encoder, &window.output_color, &window.output_stencil,
+                camera_view, camera_projection, args.ext_dt, !settings.use_dlb);
 
             menu.draw(&settings, &mut debug_renderer);
 
-            if let Err(e) = debug_renderer.render(stream, camera_projection) {
+            if let Err(e) = debug_renderer.render(&mut window.encoder, &window.output_color, &window.output_stencil, camera_projection) {
                 println!("{:?}", e);
             }
         });
