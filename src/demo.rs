@@ -6,21 +6,18 @@ use std::collections::HashMap;
 use collada::document::ColladaDocument;
 use gfx;
 use gfx_debug_draw;
-use gfx::traits::*;
 use vecmath::Matrix4;
 
 use skeletal_animation::math::DualQuaternion;
 use skeletal_animation::*;
 
-pub fn lbs_demo<R, F>(factory:F) -> Demo<R, F, QVTransform, Matrix4<f32>>
-    where R: gfx::Resources,
-          F: gfx::Factory<R> {
+pub fn lbs_demo<F: gfx::Factory<R>, R>(factory: &mut F) -> Demo<R, QVTransform, Matrix4<f32>>
+    where R: gfx::Resources {
     Demo::new(factory)
 }
 
-pub fn dlb_demo<R, F>(factory:F) -> Demo<R, F, DualQuaternion<f32>, DualQuaternion<f32>>
-    where R: gfx::Resources,
-          F: gfx::Factory<R> {
+pub fn dlb_demo<F: gfx::Factory<R>, R>(factory: &mut F) -> Demo<R, DualQuaternion<f32>, DualQuaternion<f32>>
+    where R: gfx::Resources {
     Demo::new(factory)
 }
 pub struct Settings {
@@ -33,16 +30,16 @@ pub struct Settings {
     pub params: HashMap<String, f32>,
 }
 
-pub struct Demo<R: gfx::Resources, F: gfx::Factory<R>, TAnim: Transform, TSkinning: Transform + FromTransform<TAnim> + HasShaderSources<'static>> {
+pub struct Demo<R: gfx::Resources, TAnim: Transform, TSkinning: Transform + FromTransform<TAnim> + HasShaderSources<'static>> {
     pub asset_manager: AssetManager<TAnim>,
     pub controller: AnimationController<TAnim>,
-    pub skinned_renderer: SkinnedRenderer<R, F, TSkinning>,
+    pub skinned_renderer: SkinnedRenderer<R, TSkinning>,
     pub skeleton: Rc<Skeleton>,
 }
 
-impl<R: gfx::Resources, F: gfx::Factory<R>, TAnim: Transform, TSkinning: Transform + FromTransform<TAnim> + HasShaderSources<'static>> Demo<R, F, TAnim, TSkinning> {
+impl<R: gfx::Resources, TAnim: Transform, TSkinning: Transform + FromTransform<TAnim> + HasShaderSources<'static>> Demo<R, TAnim, TSkinning> {
 
-    pub fn new(factory: F) -> Demo<R, F, TAnim, TSkinning> {
+    pub fn new<F: gfx::Factory<R>>(factory: &mut F) -> Demo<R, TAnim, TSkinning> {
 
         let collada_document = ColladaDocument::from_path(&Path::new("assets/suit_guy.dae")).unwrap();
 
@@ -71,7 +68,7 @@ impl<R: gfx::Resources, F: gfx::Factory<R>, TAnim: Transform, TSkinning: Transfo
 
         let controller = AnimationController::new(controller_def, skeleton.clone(), &asset_manager.animation_clips);
 
-        let skinned_renderer = SkinnedRenderer::<R, F, TSkinning>::from_collada(factory, collada_document, texture_paths).unwrap();
+        let skinned_renderer = SkinnedRenderer::<R, TSkinning>::from_collada(factory, collada_document, texture_paths).unwrap();
 
         Demo {
             asset_manager: asset_manager,
@@ -91,11 +88,13 @@ impl<R: gfx::Resources, F: gfx::Factory<R>, TAnim: Transform, TSkinning: Transfo
         self.controller.update(dt);
     }
 
-    pub fn render<S: gfx::Stream<R>> (
+    pub fn render<F: gfx::Factory<R>, C: gfx::CommandBuffer<R>, Rf: gfx::format::RenderFormat>(
         &mut self,
         settings: &Settings,
         debug_renderer: &mut gfx_debug_draw::DebugRenderer<R, F>,
-        stream: &mut S,
+        encoder: &mut gfx::Encoder<R, C>,
+        out_color: &gfx::handle::RenderTargetView<R, Rf>,
+        out_depth: &gfx::handle::DepthStencilView<R, gfx::format::DepthStencil>,
         camera_view: [[f32; 4]; 4],
         camera_projection: [[f32; 4]; 4],
         ext_dt: f64,
@@ -106,7 +105,7 @@ impl<R: gfx::Resources, F: gfx::Factory<R>, TAnim: Transform, TSkinning: Transfo
         self.controller.get_output_pose(ext_dt, &mut global_poses[0 .. self.skeleton.joints.len()]);
         if should_draw {
             if settings.draw_mesh {
-                self.skinned_renderer.render(stream, camera_view, camera_projection, &global_poses);
+                self.skinned_renderer.render(encoder, out_color, out_depth, camera_view, camera_projection, &global_poses);
             }
 
             if settings.draw_skeleton {
