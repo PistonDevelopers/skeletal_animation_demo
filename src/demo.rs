@@ -99,7 +99,9 @@ impl<R: gfx::Resources, TAnim: Transform, TSkinning: Transform + FromTransform<T
         camera_projection: [[f32; 4]; 4],
         ext_dt: f64,
         should_draw: bool
-    ) {
+    )
+        where TSkinning: gfx::traits::Pod
+    {
         let mut global_poses = [ TSkinning::identity(); 64 ];
 
         self.controller.get_output_pose(ext_dt, &mut global_poses[0 .. self.skeleton.joints.len()]);
