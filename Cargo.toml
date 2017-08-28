@@ -9,7 +9,7 @@ name = "demo"
 path = "src/main.rs"
 
 [dependencies]
-skeletal_animation = "0.17.0"
+skeletal_animation = "0.19.0"
 gfx_gl = "0.3.0"
 env_logger = "0.3.2"
 collada = "0.5.0"
@@ -23,24 +23,10 @@ interpolation = "0.1.0"
 piston-float = "0.3.0"
 shader_version = "0.2.1"
 sdl2 = "0.30.0"
-pistoncore-sdl2_window = "0.43.0"
-camera_controllers = "0.21.0"
-piston = "0.32.0"
-piston_window = "0.69.0"
-gfx_text = "0.17.0"
-gfx_debug_draw = "0.15.0"
-dev_menu = "0.15.0"
-
-[replace]
-
-[replace."gfx:0.14.0"]
-git = "https://github.com/bvssvni/gfx-rs"
-branch = "pod"
-
-[replace."gfx_core:0.6.0"]
-git = "https://github.com/bvssvni/gfx-rs"
-branch = "pod"
-
-[replace."gfx_device_gl:0.13.0"]
-git = "https://github.com/bvssvni/gfx-rs"
-branch = "pod"
+pistoncore-sdl2_window = "0.44.0"
+camera_controllers = "0.22.0"
+piston = "0.33.0"
+piston_window = "0.70.0"
+gfx_text = "0.18.0"
+gfx_debug_draw = "0.17.0"
+dev_menu = "0.17.0"
