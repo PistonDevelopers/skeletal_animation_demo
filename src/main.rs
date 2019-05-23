@@ -5,6 +5,7 @@ extern crate env_logger;
 extern crate gfx;
 extern crate gfx_text;
 extern crate gfx_debug_draw;
+extern crate gfx_texture;
 extern crate piston;
 extern crate piston_window;
 extern crate sdl2_window;
@@ -114,11 +115,11 @@ fn main() {
     ));
 
     let mut lbs_demo = {
-        demo::lbs_demo(&mut window.factory)
+        demo::lbs_demo(&mut window.create_texture_context())
     };
 
     let mut dlb_demo = {
-        demo::dlb_demo(&mut window.factory)
+        demo::dlb_demo(&mut window.create_texture_context())
     };
 
     for (param, &value) in dlb_demo.controller.get_parameters().iter() {
