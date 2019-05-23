@@ -7,18 +7,23 @@ use collada::document::ColladaDocument;
 use gfx;
 use gfx_debug_draw;
 use vecmath::Matrix4;
+use gfx_texture::TextureContext;
 
 use skeletal_animation::math::DualQuaternion;
 use skeletal_animation::*;
 
-pub fn lbs_demo<F: gfx::Factory<R>, R>(factory: &mut F) -> Demo<R, QVTransform, Matrix4<f32>>
+pub fn lbs_demo<F: gfx::Factory<R>, R: gfx::Resources, C: gfx::CommandBuffer<R>>(
+    tcx: &mut TextureContext<F, R, C>
+) -> Demo<R, QVTransform, Matrix4<f32>>
     where R: gfx::Resources {
-    Demo::new(factory)
+    Demo::new(tcx)
 }
 
-pub fn dlb_demo<F: gfx::Factory<R>, R>(factory: &mut F) -> Demo<R, DualQuaternion<f32>, DualQuaternion<f32>>
+pub fn dlb_demo<F: gfx::Factory<R>, R: gfx::Resources, C: gfx::CommandBuffer<R>>(
+    tcx: &mut TextureContext<F, R, C>
+) -> Demo<R, DualQuaternion<f32>, DualQuaternion<f32>>
     where R: gfx::Resources {
-    Demo::new(factory)
+    Demo::new(tcx)
 }
 pub struct Settings {
     pub use_dlb: bool,
@@ -39,7 +44,7 @@ pub struct Demo<R: gfx::Resources, TAnim: Transform, TSkinning: Transform + From
 
 impl<R: gfx::Resources, TAnim: Transform, TSkinning: Transform + FromTransform<TAnim> + HasShaderSources<'static>> Demo<R, TAnim, TSkinning> {
 
-    pub fn new<F: gfx::Factory<R>>(factory: &mut F) -> Demo<R, TAnim, TSkinning> {
+    pub fn new<F: gfx::Factory<R>, C: gfx::CommandBuffer<R>>(tcx: &mut TextureContext<F, R, C>) -> Demo<R, TAnim, TSkinning> {
 
         let collada_document = ColladaDocument::from_path(&Path::new("assets/suit_guy.dae")).unwrap();
 
@@ -68,7 +73,7 @@ impl<R: gfx::Resources, TAnim: Transform, TSkinning: Transform + FromTransform<T
 
         let controller = AnimationController::new(controller_def, skeleton.clone(), &asset_manager.animation_clips);
 
-        let skinned_renderer = SkinnedRenderer::<R, TSkinning>::from_collada(factory, collada_document, texture_paths).unwrap();
+        let skinned_renderer = SkinnedRenderer::<R, TSkinning>::from_collada(tcx, collada_document, texture_paths).unwrap();
 
         Demo {
             asset_manager: asset_manager,
