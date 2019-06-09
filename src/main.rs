@@ -165,13 +165,13 @@ fn main() {
         orbit_zoom_camera.event(&e);
         menu.event(&e, &mut settings);
 
-        e.resize(|width, height| {
+        e.resize(|args| {
             // Update projection matrix
             projection = CameraPerspective {
                 fov: 90.0f32,
                 near_clip: 0.1,
                 far_clip: 1000.0,
-                aspect_ratio: (width as f32) / (height as f32)
+                aspect_ratio: (args.width as f32) / (args.height as f32)
             }.projection();
         });
 
