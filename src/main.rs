@@ -171,7 +171,7 @@ fn main() {
                 fov: 90.0f32,
                 near_clip: 0.1,
                 far_clip: 1000.0,
-                aspect_ratio: (args.width as f32) / (args.height as f32)
+                aspect_ratio: (args.window_size[0] as f32) / (args.window_size[1] as f32)
             }.projection();
         });
 
