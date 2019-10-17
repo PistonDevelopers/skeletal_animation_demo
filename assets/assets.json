@@ -2,50 +2,50 @@
 
     "animation_clips": [{
 	      "name": "walk-forward",
-	      "source": "assets/walk.dae",
+	      "source": "walk.dae",
 	      "looping": true
     }, {
 	      "name": "run-forward",
-	      "source": "assets/run.dae",
+	      "source": "run.dae",
 	      "looping": true
     }, {
 	      "name": "walk-left",
-	      "source": "assets/walk_left.dae",
+	      "source": "walk_left.dae",
 	      "looping": true,
 	      "rotate_z": 180
     }, {
 	      "name": "walk-right",
-	      "source": "assets/walk_right.dae",
+	      "source": "walk_right.dae",
 	      "looping": true,
 	      "rotate_z": 180
     }, {
 	      "name": "stand-idle",
-	      "source": "assets/standing_idle.dae",
+	      "source": "standing_idle.dae",
 	      "looping": true,
 	      "rotate_z": 90
     }, {
 	      "name": "reference-pose",
-	      "source": "assets/t_pose.dae",
+	      "source": "t_pose.dae",
 	      "looping": true
     }, {
 	      "name": "head-look-right",
-	      "source": "assets/head_look_right.dae",
+	      "source": "head_look_right.dae",
 	      "looping": true
     }, {
 	      "name": "head-look-left",
-	      "source": "assets/head_look_left.dae",
+	      "source": "head_look_left.dae",
 	      "looping": true
     }, {
 	      "name": "head-look-down",
-	      "source": "assets/head_look_down.dae",
+	      "source": "head_look_down.dae",
 	      "looping": true
     }, {
 	      "name": "head-look-up",
-	      "source": "assets/head_look_up.dae",
+	      "source": "head_look_up.dae",
 	      "looping": true
     }, {
 	      "name": "arm-twist",
-	      "source": "assets/arm_twist.dae",
+	      "source": "arm_twist.dae",
 	      "looping": true
     }],
 

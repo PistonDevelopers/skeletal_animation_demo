@@ -39,7 +39,7 @@ use demo::Settings;
 
 fn main() {
 
-    env_logger::init().unwrap();
+    env_logger::init();
 
     let (win_width, win_height) = (640, 480);
     let mut window: PistonWindow<Sdl2Window> =

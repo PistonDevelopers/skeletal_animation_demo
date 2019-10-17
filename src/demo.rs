@@ -67,7 +67,7 @@ impl<R: gfx::Resources, TAnim: Transform, TSkinning: Transform + FromTransform<T
 
         let mut asset_manager = AssetManager::<TAnim>::new();
 
-        asset_manager.load_assets("assets/assets.json");
+        asset_manager.load_assets("assets/assets.json").unwrap();
 
         let controller_def = asset_manager.controller_defs["human-controller"].clone();
 
