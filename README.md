@@ -1,6 +1,8 @@
 # skeletal_animation_demo
 Demo project for [PistonDevelopers/skeletal_animation](https://github.com/PistonDevelopers/skeletal_animation).
 
+[DEPRECATED]
+
 ![screenshot](./screenshot.png)
 
 Rigged mesh was generated with [MakeHuman](http://www.makehuman.org/).
